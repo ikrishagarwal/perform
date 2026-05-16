@@ -5,7 +5,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { createServerClient } from "@/lib/supabase/server";
-import type { CheckinComment, CheckinCommentInsert, QuarterPhase } from "@/lib/database.types";
+import type { CheckinComment, CheckinCommentInsert, QuarterPhase, PerformanceCycle } from "@/lib/database.types";
 
 // ─── Get comments for a sheet ───────────────────────────────
 export async function getCheckinComments(sheetId: string): Promise<CheckinComment[]> {
@@ -29,8 +29,8 @@ export async function upsertCheckinComment(
 
   const { data, error } = await db
     .from("checkin_comments")
-    // @ts-ignore
-    .upsert(comment as any, {
+    // @ts-expect-error upsert is valid but type check can be strict
+    .upsert(comment, {
       onConflict: "goal_sheet_id,manager_id,quarter_phase",
     })
     .select()
@@ -53,7 +53,7 @@ export async function getActiveQuarter(): Promise<QuarterPhase | null> {
 
   if (!cycle) return null;
 
-  const c = cycle as any;
+  const c = cycle as PerformanceCycle;
   if (now >= c.q1_start && now <= c.q1_end) return "Q1";
   if (now >= c.q2_start && now <= c.q2_end) return "Q2";
   if (now >= c.q3_start && now <= c.q3_end) return "Q3";

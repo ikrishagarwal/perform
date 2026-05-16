@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { calculateProgress } from "@/lib/progress-engine";
 import { getOrCreateMySheet, getGoalSheet } from "@/lib/actions/goal-sheet.actions";
 import { createServerClient } from "@/lib/supabase/server";
+import type { Goal, GoalSheetWithGoals } from "@/lib/database.types";
+import type { User } from "@supabase/supabase-js";
 
 export const metadata: Metadata = {
   title: "Dashboard — PERFORM",
@@ -71,13 +73,10 @@ function StatusBadge({
   );
 }
 
-export default async function EmployeeDashboard() {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
+async function EmployeeDashboardView({ user }: { user: User }) {
   if (!user) return null;
 
-  let goals: any[] = [];
+  let goals: Goal[] = [];
   try {
     const realSheet = await getOrCreateMySheet(user.id);
     const sheetWithGoals = await getGoalSheet(realSheet.id);
@@ -268,4 +267,124 @@ export default async function EmployeeDashboard() {
       </section>
     </>
   );
+}
+
+async function ManagerDashboardView({ user }: { user: User }) {
+  const { getTeamSheets } = await import("@/lib/actions/goal-sheet.actions");
+  const sheets = await getTeamSheets(user.id);
+
+  const pendingCount = sheets.filter((s) => s.status === "submitted").length;
+  const approvedCount = sheets.filter((s) => s.status === "locked").length;
+
+  return (
+    <div className="flex flex-col gap-lg">
+      <header className="mb-xl flex flex-col gap-sm">
+        <h2 className="text-label-bold font-[700] tracking-[0.05em] text-primary uppercase">
+          Manager Overview
+        </h2>
+        <h1 className="text-headline-lg-mobile md:text-display-xl font-[800] text-on-surface border-b-4 border-on-surface pb-sm inline-block w-fit">
+          Team Tracker Grid
+        </h1>
+      </header>
+
+      {/* Summary Cards */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-lg">
+        <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg flex flex-col gap-md shadow-[4px_4px_0px_0px_#000000]">
+          <span className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase">Team Size</span>
+          <span className="text-headline-lg font-[800] text-on-surface">{sheets.length}</span>
+        </div>
+        <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg flex flex-col gap-md shadow-[4px_4px_0px_0px_#000000]">
+          <span className="text-label-bold font-[700] tracking-[0.05em] text-tertiary uppercase">Pending Review</span>
+          <span className="text-headline-lg font-[800] text-tertiary">{pendingCount}</span>
+        </div>
+        <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg flex flex-col gap-md shadow-[4px_4px_0px_0px_#000000]">
+          <span className="text-label-bold font-[700] tracking-[0.05em] text-primary uppercase">Approved</span>
+          <span className="text-headline-lg font-[800] text-primary">{approvedCount}</span>
+        </div>
+      </section>
+
+      <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl shadow-[4px_4px_0px_0px_#000000] overflow-hidden">
+        <div className="flex justify-between items-center p-md border-b-2 border-on-surface bg-surface-container-low">
+          <h3 className="text-headline-md font-[700] text-on-surface">Direct Reports</h3>
+          <a href="/dashboard/review" className="text-label-bold font-[700] tracking-[0.05em] text-primary hover:underline">
+            View All Reviews &rarr;
+          </a>
+        </div>
+        <div className="flex flex-col">
+          {sheets.slice(0, 5).map((sheet: GoalSheetWithGoals) => (
+            <div key={sheet.id} className="flex justify-between items-center p-md border-b border-on-surface last:border-0 hover:bg-surface-container-low transition-colors">
+              <div className="flex items-center gap-sm">
+                <div className="w-10 h-10 rounded border border-on-surface bg-surface-variant flex items-center justify-center font-[700] text-on-surface shrink-0">
+                  {sheet.employee?.full_name?.charAt(0) || "?"}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-label-bold font-[700] text-on-surface">{sheet.employee?.full_name}</span>
+                  <span className="text-label-sm text-on-surface-variant">{sheet.employee?.title}</span>
+                </div>
+              </div>
+              <div>
+                <span className={`px-sm py-xs border border-on-surface rounded text-label-sm font-[700] uppercase ${
+                  sheet.status === "submitted" ? "bg-tertiary-container text-on-tertiary-container" :
+                  sheet.status === "locked" ? "bg-surface-tint text-on-primary" : "bg-error text-on-error"
+                }`}>
+                  {sheet.status === "submitted" ? "Pending" : sheet.status === "locked" ? "Approved" : "Draft"}
+                </span>
+              </div>
+            </div>
+          ))}
+          {sheets.length === 0 && (
+            <div className="p-xl text-center text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant">
+              No direct reports found.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function AdminDashboardView() {
+  return (
+    <div className="flex flex-col gap-lg">
+      <header className="mb-xl flex flex-col gap-sm">
+        <h2 className="text-label-bold font-[700] tracking-[0.05em] text-primary uppercase">
+          Global Operations
+        </h2>
+        <h1 className="text-headline-lg-mobile md:text-display-xl font-[800] text-on-surface border-b-4 border-on-surface pb-sm inline-block w-fit">
+          Administration Hub
+        </h1>
+      </header>
+      <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-xl shadow-[4px_4px_0px_0px_#000000]">
+        <p className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase text-center py-xl">
+          System audit logs and compliance metrics will be displayed here.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default async function DashboardPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = (await createServerClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userRole = profile ? (profile as any).role : "employee";
+  const role = userRole || "employee";
+
+  if (role === "admin") {
+    return <AdminDashboardView />;
+  } else if (role === "manager") {
+    return <ManagerDashboardView user={user} />;
+  } else {
+    return <EmployeeDashboardView user={user} />;
+  }
 }

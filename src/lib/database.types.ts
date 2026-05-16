@@ -119,44 +119,38 @@ export interface GoalWithSheet extends Goal {
 
 // ─── Supabase Generated Database Interface ──────────────────
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
         Row: Profile;
         Insert: Omit<Profile, "created_at" | "updated_at">;
         Update: Partial<Omit<Profile, "id" | "created_at">>;
-        Relationships: [];
       };
       performance_cycles: {
         Row: PerformanceCycle;
         Insert: Omit<PerformanceCycle, "id" | "created_at">;
         Update: Partial<Omit<PerformanceCycle, "id" | "created_at">>;
-        Relationships: [];
       };
       goal_sheets: {
         Row: GoalSheet;
         Insert: GoalSheetInsert;
         Update: GoalSheetUpdate;
-        Relationships: [];
       };
       goals: {
         Row: Goal;
         Insert: GoalInsert;
         Update: GoalUpdate;
-        Relationships: [];
       };
       checkin_comments: {
         Row: CheckinComment;
         Insert: CheckinCommentInsert;
         Update: Partial<Pick<CheckinComment, "comment_text">>;
-        Relationships: [];
       };
       audit_logs: {
         Row: AuditLog;
         Insert: Record<string, never>; // system-managed only
         Update: Record<string, never>;
-        Relationships: [];
       };
     };
     Enums: {
@@ -168,6 +162,5 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
-    CompositeTypes: Record<string, never>;
   };
-}
+};

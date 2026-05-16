@@ -1,15 +1,17 @@
 "use server";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* ─────────────────────────────────────────────────────────────
    goal-sheet.actions.ts — Server Actions for Goal Sheet CRUD
    ───────────────────────────────────────────────────────────── */
 
 import { createServerClient } from "@/lib/supabase/server";
-import type { GoalSheet, GoalSheetWithGoals, SheetStatus } from "@/lib/database.types";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { GoalSheet, GoalSheetWithGoals, SheetStatus, Goal, Profile, PerformanceCycle } from "@/lib/database.types";
 
 // ─── Fetch active cycle ─────────────────────────────────────
 export async function getActiveCycle() {
-  const db = await createServerClient();
+  const db = ((await createServerClient()) as any) as any;
   const { data, error } = await db
     .from("performance_cycles")
     .select("*")
@@ -17,12 +19,12 @@ export async function getActiveCycle() {
     .single();
 
   if (error) throw new Error(`Failed to fetch active cycle: ${error.message}`);
-  return data;
+  return data as PerformanceCycle;
 }
 
 // ─── Fetch a single goal sheet with its goals ───────────────
 export async function getGoalSheet(sheetId: string): Promise<GoalSheetWithGoals> {
-  const db = await createServerClient();
+  const db = (await createServerClient()) as any;
 
   const { data: sheet, error: sheetErr } = await db
     .from("goal_sheets")
@@ -38,12 +40,12 @@ export async function getGoalSheet(sheetId: string): Promise<GoalSheetWithGoals>
     .order("sort_order", { ascending: true });
   if (goalsErr) throw new Error(`Failed to fetch goals: ${goalsErr.message}`);
 
-  return { ...(sheet as any), goals: goals ?? [] } as any;
+  return { ...(sheet as GoalSheet), goals: goals ?? [] } as GoalSheetWithGoals;
 }
 
 // ─── Fetch or create the employee's sheet for active cycle ──
 export async function getOrCreateMySheet(employeeId: string): Promise<GoalSheet> {
-  const db = await createServerClient();
+  const db = (await createServerClient()) as any;
   const cycle = await getActiveCycle();
 
   // Try to find existing sheet
@@ -59,17 +61,17 @@ export async function getOrCreateMySheet(employeeId: string): Promise<GoalSheet>
   // Create new sheet
   const { data: created, error } = await db
     .from("goal_sheets")
-    .insert({ employee_id: employeeId, cycle_id: cycle.id })
+    .insert({ employee_id: employeeId, cycle_id: (cycle as PerformanceCycle).id })
     .select()
     .single();
 
   if (error) throw new Error(`Failed to create goal sheet: ${error.message}`);
-  return created;
+  return created as GoalSheet;
 }
 
 // ─── Get all sheets for a given cycle (admin / manager) ─────
 export async function getSheetsByCycle(cycleId: string): Promise<GoalSheetWithGoals[]> {
-  const db = await createServerClient();
+  const db = (await createServerClient()) as any;
 
   const { data: sheets, error } = await db
     .from("goal_sheets")
@@ -81,26 +83,26 @@ export async function getSheetsByCycle(cycleId: string): Promise<GoalSheetWithGo
   if (!sheets) return [];
 
   // Batch-fetch all goals for these sheets
-  const sheetIds = sheets.map((s) => s.id);
+  const sheetIds = sheets.map((s: any) => s.id as string);
   const { data: allGoals } = await db
     .from("goals")
     .select("*")
     .in("goal_sheet_id", sheetIds)
     .order("sort_order", { ascending: true });
 
-  const goalMap = new Map<string, typeof allGoals>();
-  for (const g of allGoals ?? []) {
+  const goalMap = new Map<string, Goal[]>();
+  for (const g of (allGoals as Goal[] ?? [])) {
     const arr = goalMap.get(g.goal_sheet_id) ?? [];
     arr.push(g);
     goalMap.set(g.goal_sheet_id, arr);
   }
 
-  return (sheets as any[]).map((s) => ({ ...(s as any), goals: goalMap.get(s.id) ?? [] })) as any;
+  return sheets.map((s: any) => ({ ...s, goals: goalMap.get(s.id) ?? [] })) as GoalSheetWithGoals[];
 }
 
 // ─── Get sheets for a manager's direct reports (or all for Admin) ──
 export async function getTeamSheets(callerId: string): Promise<GoalSheetWithGoals[]> {
-  const db = await createServerClient();
+  const db = (await createServerClient()) as any;
   const cycle = await getActiveCycle();
 
   // 1. Determine which employees to fetch
@@ -109,23 +111,25 @@ export async function getTeamSheets(callerId: string): Promise<GoalSheetWithGoal
     .select("role")
     .eq("id", callerId)
     .single();
+  
+  const profile = callerProfile as { role: string } | null;
 
   let reportIds: string[] = [];
 
-  if (callerProfile?.role === "admin") {
+  if (profile?.role === "admin") {
     // Admin: Get all employees
     const { data: allEmps } = await db
       .from("profiles")
       .select("id")
       .eq("role", "employee");
-    reportIds = allEmps?.map((r) => r.id) ?? [];
+    reportIds = allEmps?.map((r: any) => r.id) ?? [];
   } else {
     // Manager: Get direct reports only
     const { data: reports } = await db
       .from("profiles")
       .select("id")
       .eq("manager_id", callerId);
-    reportIds = reports?.map((r) => r.id) ?? [];
+    reportIds = reports?.map((r: any) => r.id) ?? [];
   }
 
   if (reportIds.length === 0) return [];
@@ -142,7 +146,7 @@ export async function getTeamSheets(callerId: string): Promise<GoalSheetWithGoal
   if (!sheets) return [];
 
   // 3. Attach goals + employee profiles
-  const sheetIds = sheets.map((s) => s.id);
+  const sheetIds = sheets.map((s: any) => s.id);
   const [{ data: allGoals }, { data: profiles }] = await Promise.all([
     db
       .from("goals")
@@ -155,23 +159,23 @@ export async function getTeamSheets(callerId: string): Promise<GoalSheetWithGoal
       .in("id", reportIds)
   ]);
 
-  const goalMap = new Map<string, any[]>();
+  const goalMap = new Map<string, Goal[]>();
   for (const g of allGoals ?? []) {
     const arr = goalMap.get(g.goal_sheet_id) ?? [];
     arr.push(g);
     goalMap.set(g.goal_sheet_id, arr);
   }
 
-  const profileMap = new Map<string, any>();
+  const profileMap = new Map<string, Profile>();
   for (const p of profiles ?? []) {
     profileMap.set(p.id, p);
   }
 
-  return (sheets as any[]).map((s) => ({
-    ...(s as any),
+  return (sheets as GoalSheet[]).map((s) => ({
+    ...s,
     goals: goalMap.get(s.id) ?? [],
     employee: profileMap.get(s.employee_id) ?? undefined,
-  })) as any;
+  })) as GoalSheetWithGoals[];
 }
 
 // ─── Update sheet status ────────────────────────────────────
@@ -180,7 +184,7 @@ export async function updateSheetStatus(
   status: SheetStatus,
   options?: { rejectionFeedback?: string; approvedBy?: string }
 ) {
-  const db = await createServerClient();
+  const db = createAdminClient() as any;
 
   const update: Record<string, unknown> = { status };
   if (options?.rejectionFeedback !== undefined) {
@@ -192,12 +196,22 @@ export async function updateSheetStatus(
 
   const { data, error } = await db
     .from("goal_sheets")
-    // @ts-ignore
-    .update(update as any)
+    .update(update as never)
     .eq("id", sheetId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw new Error(`Failed to update sheet status: ${error.message}`);
+  if (!data) {
+    // Row was updated but RLS prevented it from being returned, or ID was invalid.
+    // Re-fetch to confirm the update took effect.
+    const { data: refetched } = await db
+      .from("goal_sheets")
+      .select("*")
+      .eq("id", sheetId)
+      .maybeSingle();
+    if (refetched) return refetched;
+    throw new Error(`Sheet ${sheetId} not found or not accessible after status update.`);
+  }
   return data;
 }

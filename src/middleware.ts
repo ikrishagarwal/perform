@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({
@@ -50,13 +50,6 @@ export async function middleware(request: NextRequest) {
     // Redirect authenticated users away from login
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
-  }
-
-  // Handle root redirect to dashboard
-  if (request.nextUrl.pathname === "/") {
-    const url = request.nextUrl.clone();
-    url.pathname = user ? "/dashboard" : "/login";
     return NextResponse.redirect(url);
   }
 

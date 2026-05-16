@@ -23,7 +23,7 @@ export default function PerformanceCheckin() {
         const sheet = await getOrCreateMySheet(user.id);
         const fullSheet = await getGoalSheet(sheet.id);
         
-        setGoals(fullSheet.goals as any); // Cast as local Goal type may differ slightly
+        setGoals(fullSheet.goals); 
         
         const init: Record<string, string> = {};
         fullSheet.goals.forEach((g) => {
@@ -45,7 +45,7 @@ export default function PerformanceCheckin() {
       for (const goal of goals) {
         const actual = actuals[goal.id];
         if (actual !== undefined && actual !== (goal.actual_achievement ?? "")) {
-          const progress = calculateProgress(goal.uom as any, goal.target_value, actual || null);
+          const progress = calculateProgress(goal.uom, goal.target_value, actual || null);
           const status = progress >= 100 ? "completed" : progress === 0 ? "not_started" : "on_track";
           
           await updateGoalActuals(goal.id, actual, status);
@@ -78,14 +78,14 @@ export default function PerformanceCheckin() {
   const totalGoals = goals.length;
   const onTrackCount = goals.filter(
     (g) => {
-      const p = calculateProgress(g.uom as any, g.target_value, actuals[g.id] || null);
+      const p = calculateProgress(g.uom, g.target_value, actuals[g.id] || null);
       return p >= 70;
     }
   ).length;
 
   const overallProgress = Math.round(
     goals.reduce((sum, g) => {
-      const p = calculateProgress(g.uom as any, g.target_value, actuals[g.id] || null);
+      const p = calculateProgress(g.uom, g.target_value, actuals[g.id] || null);
       return sum + (p * g.weightage) / 100;
     }, 0) || 0
   );
@@ -104,7 +104,7 @@ export default function PerformanceCheckin() {
           <h1 className="text-headline-lg-mobile md:text-headline-lg font-[800] text-on-surface">
             Quarterly Performance Check-in
           </h1>
-          <p className="text-body-lg font-[400] text-on-surface-variant mt-sm max-w-2xl">
+          <p className="text-body-lg font-[400] text-on-surface-variant mt-sm max-w-[42rem]">
             Enter actual achievements against targets. Goals are locked for
             editing during the review phase.
           </p>
@@ -180,7 +180,7 @@ export default function PerformanceCheckin() {
           {tGoals.map((goal) => {
             const actual = actuals[goal.id] ?? "";
             const progress = calculateProgress(
-              goal.uom as any,
+              goal.uom,
               goal.target_value,
               actual || null
             );

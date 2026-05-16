@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import type { Metadata } from "next";
 import { getOrCreateMySheet, getGoalSheet, updateSheetStatus } from "@/lib/actions/goal-sheet.actions";
 import { upsertGoals } from "@/lib/actions/goal.actions";
 import type { GoalInsert } from "@/lib/database.types";
@@ -126,15 +125,19 @@ export default function GoalWorkspace() {
     if (!isValid || !sheetId) return;
     setSaving(true);
     try {
-      const dbGoals: any[] = rows.map(r => {
-        const base = {
+      const dbGoals: (GoalInsert & { id?: string })[] = rows.map(r => {
+        const base: GoalInsert = {
           goal_sheet_id: sheetId,
           thrust_area: r.thrustArea,
           title: r.title,
           description: r.description,
-          uom: "numeric_max" as const, // Hardcoded for simplified UI matching
+          uom: "numeric_max", // Hardcoded for simplified UI matching
           target_value: String(r.target),
           weightage: r.weightage,
+          actual_achievement: null,
+          progress_status: "not_started",
+          parent_goal_id: null,
+          sort_order: 0,
         };
         return r.id.startsWith("new-") ? base : { ...base, id: r.id };
       });
@@ -164,7 +167,7 @@ export default function GoalWorkspace() {
           </p>
         </header>
 
-        {rows.map((row, index) => (
+        {rows.map((row) => (
           <div
             key={row.id}
             className="bg-surface-container-lowest border-2 border-on-surface shadow-[4px_4px_0px_0px_#1b1b1b] hover:shadow-[6px_6px_0px_0px_#1b1b1b] transition-shadow duration-200"

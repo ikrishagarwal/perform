@@ -51,7 +51,7 @@ export default async function ManagerReviewPage() {
 
   /* Build review rows from actual data */
   const reviewRows = sheets.map((sheet) => {
-    const employee = (sheet as any).employee;
+    const employee = sheet.employee;
     const goals = sheet.goals || [];
     const totalWeight = goals.reduce((s, g) => s + g.weightage, 0);
     return { sheet, employee, totalWeight };
@@ -64,7 +64,7 @@ export default async function ManagerReviewPage() {
         <h1 className="text-headline-lg-mobile md:text-headline-lg font-[800] text-on-surface">
           Manager Review
         </h1>
-        <p className="text-body-lg font-[400] text-on-surface-variant max-w-2xl">
+        <p className="text-body-lg font-[400] text-on-surface-variant max-w-[42rem]">
           Review and approve team goals for the current cycle. Ensure alignment
           with departmental objectives.
         </p>

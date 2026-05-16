@@ -3,14 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Profile } from "@/lib/database.types";
 
-/* ─── Navigation Items ─── */
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
-  { href: "/dashboard/workspace", label: "Workspace", icon: "edit_square" },
-  { href: "/dashboard/review", label: "Manager Review", icon: "group_work" },
-  { href: "/dashboard/checkin", label: "Check-in", icon: "analytics" },
-];
+const getNavItems = (role?: string) => {
+  const items = [
+    { href: "/dashboard", label: "Dashboard", icon: "dashboard", roles: ["employee", "manager", "admin"] },
+    { href: "/dashboard/workspace", label: "Workspace", icon: "edit_square", roles: ["employee", "manager"] },
+    { href: "/dashboard/review", label: "Manager Review", icon: "group_work", roles: ["manager", "admin"] },
+    { href: "/dashboard/checkin", label: "Check-in", icon: "analytics", roles: ["employee", "manager"] },
+    { href: "/dashboard/admin", label: "Admin Hub", icon: "admin_panel_settings", roles: ["admin"] },
+  ];
+  return items.filter(item => item.roles.includes(role || "employee"));
+};
 
 const FOOTER_ITEMS = [
   { href: "#", label: "Support", icon: "help" },
@@ -18,7 +22,7 @@ const FOOTER_ITEMS = [
 ];
 
 /* ─── Desktop Sidebar ─── */
-function Sidebar({ currentUser }: { currentUser: any }) {
+function Sidebar({ currentUser }: { currentUser: Profile | null }) {
   const pathname = usePathname();
 
   return (
@@ -37,7 +41,7 @@ function Sidebar({ currentUser }: { currentUser: any }) {
       <div className="flex-1 overflow-y-auto p-md flex flex-col gap-lg">
         {/* Navigation Tabs */}
         <div className="flex flex-col gap-xs">
-          {NAV_ITEMS.map((item) => {
+          {getNavItems(currentUser?.role || "employee").map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
@@ -161,7 +165,7 @@ function MobileMenu({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  currentUser: any;
+  currentUser: Profile | null;
 }) {
   const pathname = usePathname();
 
@@ -190,7 +194,7 @@ function MobileMenu({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-md flex flex-col gap-md">
           <div className="flex flex-col gap-xs">
-            {NAV_ITEMS.map((item) => {
+            {getNavItems(currentUser?.role || "employee").map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
@@ -260,7 +264,7 @@ export default function DashboardClientShell({
   currentUser,
 }: {
   children: React.ReactNode;
-  currentUser: any;
+  currentUser: Profile | null;
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 

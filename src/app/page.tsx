@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
+import { createServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "PERFORM — Precision in Alignment",
@@ -8,7 +9,10 @@ export const metadata: Metadata = {
     "Driving organizational accountability through structured data. A high-stakes goal tracking system engineered for high-performers.",
 };
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <div className="bg-surface-container-lowest text-on-surface min-h-screen flex flex-col overflow-x-hidden">
       {/* ─── Top App Bar ─── */}
@@ -40,17 +44,19 @@ export default function LandingPage() {
             </nav>
           </div>
           <div className="flex items-center gap-md">
+            {!user && (
+              <Link
+                href="/login"
+                className="text-label-bold font-[700] tracking-[0.05em] text-on-surface bg-surface-container-lowest border-sharp px-lg py-sm btn-neo hidden md:block"
+              >
+                Login
+              </Link>
+            )}
             <Link
-              href="/dashboard"
-              className="text-label-bold font-[700] tracking-[0.05em] text-on-surface bg-surface-container-lowest border-sharp px-lg py-sm btn-neo hidden md:block"
-            >
-              Login
-            </Link>
-            <Link
-              href="/dashboard"
+              href={user ? "/dashboard" : "/login"}
               className="text-label-bold font-[700] tracking-[0.05em] text-on-tertiary bg-on-surface border-sharp px-lg py-sm btn-neo"
             >
-              Start Q4 Cycle
+              {user ? "Dashboard" : "Start Q4 Cycle"}
             </Link>
           </div>
         </div>
@@ -66,14 +72,14 @@ export default function LandingPage() {
                 <br />
                 Alignment.
               </h1>
-              <p className="text-body-lg font-[400] text-on-surface-variant max-w-2xl border-l-4 border-primary pl-md">
+              <p className="text-body-lg font-[400] text-on-surface-variant max-w-[42rem] border-l-4 border-primary pl-md">
                 Driving organizational accountability through structured data. A
                 high-stakes goal tracking system engineered for high-performers
                 who value clarity over ornamentation.
               </p>
               <div className="pt-md flex flex-col sm:flex-row gap-md">
                 <Link
-                  href="/dashboard/workspace"
+                  href={user ? "/dashboard/workspace" : "/login"}
                   className="text-label-bold font-[700] tracking-[0.05em] text-on-tertiary bg-on-surface border-sharp px-lg py-md btn-neo flex items-center justify-center gap-sm"
                 >
                   ENTER WORKSPACE
@@ -114,7 +120,7 @@ export default function LandingPage() {
               <h2 className="text-headline-lg-mobile md:text-headline-lg font-[800] uppercase tracking-tighter mb-sm">
                 Structured Objectives
               </h2>
-              <p className="text-body-md font-[400] text-on-surface-variant max-w-xl">
+              <p className="text-body-md font-[400] text-on-surface-variant max-w-[36rem]">
                 The Goal Entry Workspace demands precision. 1px borders define
                 the architecture, ensuring every metric is weighed and measured
                 with absolute intent.

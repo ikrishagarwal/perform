@@ -5,7 +5,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { createServerClient } from "@/lib/supabase/server";
-import type { AuditLog, Profile, PerformanceCycle } from "@/lib/database.types";
+import type { AuditLog, Profile, PerformanceCycle, GoalSheet, Goal } from "@/lib/database.types";
 
 // ─── Fetch audit logs ───────────────────────────────────────
 export async function getAuditLogs(filters?: {
@@ -37,8 +37,8 @@ export async function adminUnlockSheet(sheetId: string) {
 
   const { data, error } = await db
     .from("goal_sheets")
-    // @ts-ignore
-    .update({ status: "draft" } as any)
+    // @ts-expect-error status update is valid but type check can be strict
+    .update({ status: "draft" })
     .eq("id", sheetId)
     .select()
     .single();
@@ -55,8 +55,8 @@ export async function upsertPerformanceCycle(cycle: Omit<PerformanceCycle, "id" 
     const { id, ...rest } = cycle;
     const { data, error } = await db
       .from("performance_cycles")
-      // @ts-ignore
-      .update(rest as any)
+      // @ts-expect-error update rest may contain unexpected fields
+      .update(rest)
       .eq("id", id)
       .select()
       .single();
@@ -66,8 +66,8 @@ export async function upsertPerformanceCycle(cycle: Omit<PerformanceCycle, "id" 
 
   const { data, error } = await db
     .from("performance_cycles")
-    // @ts-ignore
-    .insert(cycle as any)
+    // @ts-expect-error insert cycle may contain unexpected fields
+    .insert(cycle)
     .select()
     .single();
   if (error) throw new Error(`Failed to create cycle: ${error.message}`);
@@ -96,8 +96,8 @@ export async function exportGoalDataCsv(cycleId: string): Promise<string> {
     .select("*")
     .eq("cycle_id", cycleId);
 
-  const sheetsArr = sheets as any[];
-  if (!sheetsArr || sheetsArr.length === 0) return "";
+  const sheetsArr = (sheets as GoalSheet[]) || [];
+  if (sheetsArr.length === 0) return "";
 
   const sheetIds = sheetsArr.map((s) => s.id);
   const empIds = sheetsArr.map((s) => s.employee_id);
@@ -108,8 +108,8 @@ export async function exportGoalDataCsv(cycleId: string): Promise<string> {
   ]);
 
   const profileMap = new Map<string, string>();
-  const profilesArr = profiles as any[];
-  for (const p of profilesArr ?? []) {
+  const profilesArr = (profiles as Profile[]) || [];
+  for (const p of profilesArr) {
     profileMap.set(p.id, p.full_name);
   }
 
@@ -131,8 +131,8 @@ export async function exportGoalDataCsv(cycleId: string): Promise<string> {
     "Progress Status",
   ];
 
-  const goalsArr = goals as any[];
-  const rows = (goalsArr ?? []).map((g) => {
+  const goalsArr = (goals as Goal[]) || [];
+  const rows = goalsArr.map((g) => {
     const empId = sheetEmpMap.get(g.goal_sheet_id) ?? "";
     const empName = profileMap.get(empId) ?? "Unknown";
     const sheet = sheetsArr.find((s) => s.id === g.goal_sheet_id);
@@ -169,17 +169,17 @@ export async function getComplianceMetrics(cycleId: string) {
     .select("*", { count: "exact", head: true })
     .eq("role", "employee");
 
-  const sheetsArr = sheets as any[];
+  const sheetsArr = (sheets as GoalSheet[]) || [];
   const total = totalEmployees ?? 0;
-  const submitted = (sheetsArr ?? []).filter((s) => s.status !== "draft").length;
-  const approved = (sheetsArr ?? []).filter((s) => s.status === "locked").length;
-  const pending = (sheetsArr ?? []).filter((s) => s.status === "submitted").length;
-  const draft = (sheetsArr ?? []).filter((s) => s.status === "draft").length;
-  const notStarted = total - (sheetsArr ?? []).length;
+  const submitted = sheetsArr.filter((s) => s.status !== "draft").length;
+  const approved = sheetsArr.filter((s) => s.status === "locked").length;
+  const pending = sheetsArr.filter((s) => s.status === "submitted").length;
+  const draft = sheetsArr.filter((s) => s.status === "draft").length;
+  const notStarted = total - sheetsArr.length;
 
   return {
     totalEmployees: total,
-    sheetsCreated: (sheetsArr ?? []).length,
+    sheetsCreated: sheetsArr.length,
     submitted,
     approved,
     pending,
