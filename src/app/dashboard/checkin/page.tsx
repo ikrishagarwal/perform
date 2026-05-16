@@ -2,8 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { calculateProgress } from "@/lib/progress-engine";
-import { getOrCreateMySheet, getGoalSheet } from "@/lib/actions/goal-sheet.actions";
+import {
+  getOrCreateMySheet,
+  getGoalSheet,
+} from "@/lib/actions/goal-sheet.actions";
 import { updateGoalActuals } from "@/lib/actions/goal.actions";
+import NeoToast from "@/components/feedback/NeoToast";
+import { useToast } from "@/hooks/useToast";
 import type { Goal } from "@/lib/database.types";
 
 export default function PerformanceCheckin() {
@@ -11,20 +16,23 @@ export default function PerformanceCheckin() {
   const [actuals, setActuals] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { toast, showSuccess, showError } = useToast();
 
   useEffect(() => {
     async function loadData() {
       try {
         const { supabase } = await import("@/lib/supabase/client");
-        const { data: { user } } = await supabase.auth.getUser();
-        
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
         if (!user) return;
 
         const sheet = await getOrCreateMySheet(user.id);
         const fullSheet = await getGoalSheet(sheet.id);
-        
-        setGoals(fullSheet.goals); 
-        
+
+        setGoals(fullSheet.goals);
+
         const init: Record<string, string> = {};
         fullSheet.goals.forEach((g) => {
           init[g.id] = g.actual_achievement ?? "";
@@ -44,24 +52,40 @@ export default function PerformanceCheckin() {
     try {
       for (const goal of goals) {
         const actual = actuals[goal.id];
-        if (actual !== undefined && actual !== (goal.actual_achievement ?? "")) {
-          const progress = calculateProgress(goal.uom, goal.target_value, actual || null);
-          const status = progress >= 100 ? "completed" : progress === 0 ? "not_started" : "on_track";
-          
+        if (
+          actual !== undefined &&
+          actual !== (goal.actual_achievement ?? "")
+        ) {
+          const progress = calculateProgress(
+            goal.uom,
+            goal.target_value,
+            actual || null,
+          );
+          const status =
+            progress >= 100
+              ? "completed"
+              : progress === 0
+                ? "not_started"
+                : "on_track";
+
           await updateGoalActuals(goal.id, actual, status);
         }
       }
-      alert("Check-in saved successfully!");
+      showSuccess("Check-in saved successfully!");
     } catch (err) {
       console.error(err);
-      alert("Failed to save check-in.");
+      showError("Failed to save check-in.");
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <div className="p-xl text-center text-on-surface-variant font-[500]">Loading Check-in Data...</div>;
+    return (
+      <div className="p-xl text-center text-on-surface-variant font-[500]">
+        Loading Check-in Data...
+      </div>
+    );
   }
 
   /* ─── Goal Groups by Thrust Area ─── */
@@ -72,26 +96,25 @@ export default function PerformanceCheckin() {
       acc[area].push(goal);
       return acc;
     },
-    {}
+    {},
   );
 
   const totalGoals = goals.length;
-  const onTrackCount = goals.filter(
-    (g) => {
-      const p = calculateProgress(g.uom, g.target_value, actuals[g.id] || null);
-      return p >= 70;
-    }
-  ).length;
+  const onTrackCount = goals.filter((g) => {
+    const p = calculateProgress(g.uom, g.target_value, actuals[g.id] || null);
+    return p >= 70;
+  }).length;
 
   const overallProgress = Math.round(
     goals.reduce((sum, g) => {
       const p = calculateProgress(g.uom, g.target_value, actuals[g.id] || null);
       return sum + (p * g.weightage) / 100;
-    }, 0) || 0
+    }, 0) || 0,
   );
 
   return (
     <div className="flex flex-col gap-xl md:gap-2xl max-w-[1440px] mx-auto w-full">
+      <NeoToast toast={toast} />
       {/* Header Section */}
       <section className="flex flex-col md:flex-row justify-between items-start md:items-end gap-md">
         <div>
@@ -110,10 +133,18 @@ export default function PerformanceCheckin() {
           </p>
         </div>
         <div className="flex items-center gap-md">
-          <button onClick={handleSave} disabled={saving} className="px-lg py-sm bg-surface-container-lowest text-on-surface border border-on-surface text-label-bold font-[700] tracking-[0.05em] hover:bg-surface-container-low transition-colors disabled:opacity-50">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-lg py-sm bg-surface-container-lowest text-on-surface border border-on-surface text-label-bold font-[700] tracking-[0.05em] hover:bg-surface-container-low transition-colors disabled:opacity-50"
+          >
             {saving ? "Saving..." : "Save Draft"}
           </button>
-          <button onClick={handleSave} disabled={saving} className="px-lg py-sm bg-on-surface text-surface border border-on-surface text-label-bold font-[700] tracking-[0.05em] hover:shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-px hover:-translate-x-px transition-all flex items-center gap-xs disabled:opacity-50">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-lg py-sm bg-on-surface text-surface border border-on-surface text-label-bold font-[700] tracking-[0.05em] hover:shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-px hover:-translate-x-px transition-all flex items-center gap-xs disabled:opacity-50"
+          >
             <span
               className="material-symbols-outlined"
               style={{ fontVariationSettings: "'wght' 700" }}
@@ -182,7 +213,7 @@ export default function PerformanceCheckin() {
             const progress = calculateProgress(
               goal.uom,
               goal.target_value,
-              actual || null
+              actual || null,
             );
             const isOnTrack = progress >= 70;
             const isAtRisk = progress >= 30 && progress < 70;
@@ -193,28 +224,28 @@ export default function PerformanceCheckin() {
               parseFloat(goal.target_value) >= 1000000
                 ? `$${(parseFloat(goal.target_value) / 1000000).toFixed(1)}M`
                 : goal.uom === "numeric_max"
-                ? `${goal.target_value}ms`
-                : `${goal.target_value}%`;
+                  ? `${goal.target_value}ms`
+                  : `${goal.target_value}%`;
 
             const statusLabel = isOnTrack
               ? "On Track"
               : isAtRisk
-              ? "At Risk"
-              : progress === 0
-              ? "Not Started"
-              : "Behind";
+                ? "At Risk"
+                : progress === 0
+                  ? "Not Started"
+                  : "Behind";
 
             const statusColor = isOnTrack
               ? "text-primary"
               : isAtRisk
-              ? "text-tertiary-container"
-              : "text-on-surface-variant";
+                ? "text-tertiary-container"
+                : "text-on-surface-variant";
 
             const barColor = isOnTrack
               ? "bg-primary"
               : isAtRisk
-              ? "bg-tertiary-container"
-              : "bg-outline";
+                ? "bg-tertiary-container"
+                : "bg-outline";
 
             return (
               <div
@@ -223,7 +254,10 @@ export default function PerformanceCheckin() {
               >
                 {/* Lock icon */}
                 <div className="absolute top-sm right-sm text-outline group-hover:text-on-surface">
-                  <span className="material-symbols-outlined" title="Locked during review phase">
+                  <span
+                    className="material-symbols-outlined"
+                    title="Locked during review phase"
+                  >
                     lock
                   </span>
                 </div>
@@ -279,8 +313,8 @@ export default function PerformanceCheckin() {
                             parseFloat(goal.target_value) >= 1000000
                               ? "pl-lg pr-sm"
                               : goal.uom === "numeric_max"
-                              ? "pl-sm pr-lg text-right"
-                              : "pl-sm pr-lg text-right"
+                                ? "pl-sm pr-lg text-right"
+                                : "pl-sm pr-lg text-right"
                           }`}
                           placeholder="0"
                         />

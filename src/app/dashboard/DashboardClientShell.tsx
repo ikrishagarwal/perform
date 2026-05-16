@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Profile } from "@/lib/database.types";
+import { logout } from "@/app/login/actions";
 
 const getNavItems = (role?: string) => {
   const items = [
@@ -92,10 +93,7 @@ function Sidebar({ currentUser }: { currentUser: Profile | null }) {
             </a>
           ))}
           {/* Logout Button */}
-          <form action={async () => {
-            const { logout } = await import("@/app/login/actions");
-            await logout();
-          }}>
+          <form action={logout}>
             <button type="submit" className="w-full flex items-center gap-md text-error hover:bg-error-container hover:text-on-error-container p-md border-2 border-transparent hover:border-error transition-all text-label-bold font-[700] tracking-[0.05em]">
               <span className="material-symbols-outlined">logout</span>
               <span>Logout</span>
@@ -216,10 +214,7 @@ function MobileMenu({
           
           <div className="mt-auto flex flex-col gap-xs border-t-2 border-on-surface pt-md">
              {/* Logout Mobile */}
-            <form action={async () => {
-              const { logout } = await import("@/app/login/actions");
-              await logout();
-            }}>
+            <form action={logout}>
               <button type="submit" className="w-full flex items-center gap-md text-error hover:bg-error-container hover:text-on-error-container p-md border-2 border-transparent hover:border-error transition-all text-label-bold font-[700] tracking-[0.05em]">
                 <span className="material-symbols-outlined">logout</span>
                 <span>Logout</span>

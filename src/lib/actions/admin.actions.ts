@@ -1,11 +1,20 @@
 "use server";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* ─────────────────────────────────────────────────────────────
    admin.actions.ts — Server Actions for Admin/HR operations
    ───────────────────────────────────────────────────────────── */
 
 import { createServerClient } from "@/lib/supabase/server";
-import type { AuditLog, Profile, PerformanceCycle, GoalSheet, Goal } from "@/lib/database.types";
+import type { PostgrestSingleResponse } from "@supabase/supabase-js";
+import type {
+  AuditLog,
+  Profile,
+  PerformanceCycle,
+  GoalSheet,
+  Goal,
+  Database,
+} from "@/lib/database.types";
 
 // ─── Fetch audit logs ───────────────────────────────────────
 export async function getAuditLogs(filters?: {
@@ -28,48 +37,44 @@ export async function getAuditLogs(filters?: {
 
   const { data, error } = await query;
   if (error) throw new Error(`Failed to fetch audit logs: ${error.message}`);
-  return data ?? [];
+  return (data as AuditLog[]) ?? [];
 }
 
 // ─── Admin unlock: revert locked sheet to draft ─────────────
 export async function adminUnlockSheet(sheetId: string) {
   const db = await createServerClient();
 
-  const { data, error } = await db
-    .from("goal_sheets")
-    // @ts-expect-error status update is valid but type check can be strict
+  const { data, error } = (await (db.from("goal_sheets") as any)
     .update({ status: "draft" })
     .eq("id", sheetId)
     .select()
-    .single();
+    .single()) as PostgrestSingleResponse<GoalSheet>;
 
   if (error) throw new Error(`Failed to unlock sheet: ${error.message}`);
   return data;
 }
 
 // ─── Manage performance cycles ──────────────────────────────
-export async function upsertPerformanceCycle(cycle: Omit<PerformanceCycle, "id" | "created_at"> & { id?: string }) {
+export async function upsertPerformanceCycle(
+  cycle: Omit<PerformanceCycle, "id" | "created_at"> & { id?: string },
+) {
   const db = await createServerClient();
 
   if (cycle.id) {
     const { id, ...rest } = cycle;
-    const { data, error } = await db
-      .from("performance_cycles")
-      // @ts-expect-error update rest may contain unexpected fields
+    const { data, error } = (await (db.from("performance_cycles") as any)
       .update(rest)
       .eq("id", id)
       .select()
-      .single();
+      .single()) as PostgrestSingleResponse<PerformanceCycle>;
     if (error) throw new Error(`Failed to update cycle: ${error.message}`);
     return data;
   }
 
-  const { data, error } = await db
-    .from("performance_cycles")
-    // @ts-expect-error insert cycle may contain unexpected fields
-    .insert(cycle)
+  const { data, error } = (await (db.from("performance_cycles") as any)
+    .insert(cycle as Database["public"]["Tables"]["performance_cycles"]["Insert"])
     .select()
-    .single();
+    .single()) as PostgrestSingleResponse<PerformanceCycle>;
   if (error) throw new Error(`Failed to create cycle: ${error.message}`);
   return data;
 }
@@ -103,7 +108,10 @@ export async function exportGoalDataCsv(cycleId: string): Promise<string> {
   const empIds = sheetsArr.map((s) => s.employee_id);
 
   const [{ data: goals }, { data: profiles }] = await Promise.all([
-    db.from("goals").select("*").in("goal_sheet_id", sheetIds).order("sort_order"),
+    (db.from("goals") as any)
+      .select("*")
+      .in("goal_sheet_id", sheetIds)
+      .order("sort_order"),
     db.from("profiles").select("*").in("id", empIds),
   ]);
 

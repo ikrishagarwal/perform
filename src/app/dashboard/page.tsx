@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { calculateProgress } from "@/lib/progress-engine";
-import { getOrCreateMySheet, getGoalSheet } from "@/lib/actions/goal-sheet.actions";
+import {
+  getOrCreateMySheet,
+  getGoalSheet,
+} from "@/lib/actions/goal-sheet.actions";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Goal, GoalSheetWithGoals } from "@/lib/database.types";
 import type { User } from "@supabase/supabase-js";
 
 export const metadata: Metadata = {
   title: "Dashboard — PERFORM",
-  description: "Employee performance cycle overview with active goals and tracking metrics.",
+  description:
+    "Employee performance cycle overview with active goals and tracking metrics.",
 };
 
 /* ─── Summary Card ─── */
@@ -36,11 +41,7 @@ function SummaryCard({
 }
 
 /* ─── Status Badge ─── */
-function StatusBadge({
-  status,
-}: {
-  status: "active" | "pending" | "draft";
-}) {
+function StatusBadge({ status }: { status: "active" | "pending" | "draft" }) {
   const config = {
     active: {
       bg: "bg-surface-container",
@@ -184,34 +185,34 @@ async function EmployeeDashboardView({ user }: { user: User }) {
             const progress = calculateProgress(
               goal.uom,
               goal.target_value,
-              goal.actual_achievement
+              goal.actual_achievement,
             );
             const isLast = i === goals.length - 1;
             const statusType =
               goal.progress_status === "on_track"
                 ? "active"
                 : goal.progress_status === "not_started"
-                ? "draft"
-                : "pending";
+                  ? "draft"
+                  : "pending";
 
             const progressColor =
               progress >= 60
                 ? "bg-primary"
                 : progress >= 30
-                ? "bg-tertiary"
-                : "bg-outline";
+                  ? "bg-tertiary"
+                  : "bg-outline";
             const progressLabel =
               goal.progress_status === "on_track"
                 ? "On Track"
                 : goal.progress_status === "not_started"
-                ? "Not Started"
-                : "Completed";
+                  ? "Not Started"
+                  : "Completed";
             const progressTextColor =
               goal.progress_status === "on_track"
                 ? "text-on-surface-variant"
                 : goal.progress_status === "not_started"
-                ? "text-on-surface-variant"
-                : "text-primary";
+                  ? "text-on-surface-variant"
+                  : "text-primary";
 
             return (
               <div
@@ -290,44 +291,77 @@ async function ManagerDashboardView({ user }: { user: User }) {
       {/* Summary Cards */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-lg">
         <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg flex flex-col gap-md shadow-[4px_4px_0px_0px_#000000]">
-          <span className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase">Team Size</span>
-          <span className="text-headline-lg font-[800] text-on-surface">{sheets.length}</span>
+          <span className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase">
+            Team Size
+          </span>
+          <span className="text-headline-lg font-[800] text-on-surface">
+            {sheets.length}
+          </span>
         </div>
         <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg flex flex-col gap-md shadow-[4px_4px_0px_0px_#000000]">
-          <span className="text-label-bold font-[700] tracking-[0.05em] text-tertiary uppercase">Pending Review</span>
-          <span className="text-headline-lg font-[800] text-tertiary">{pendingCount}</span>
+          <span className="text-label-bold font-[700] tracking-[0.05em] text-tertiary uppercase">
+            Pending Review
+          </span>
+          <span className="text-headline-lg font-[800] text-tertiary">
+            {pendingCount}
+          </span>
         </div>
         <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg flex flex-col gap-md shadow-[4px_4px_0px_0px_#000000]">
-          <span className="text-label-bold font-[700] tracking-[0.05em] text-primary uppercase">Approved</span>
-          <span className="text-headline-lg font-[800] text-primary">{approvedCount}</span>
+          <span className="text-label-bold font-[700] tracking-[0.05em] text-primary uppercase">
+            Approved
+          </span>
+          <span className="text-headline-lg font-[800] text-primary">
+            {approvedCount}
+          </span>
         </div>
       </section>
 
       <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl shadow-[4px_4px_0px_0px_#000000] overflow-hidden">
         <div className="flex justify-between items-center p-md border-b-2 border-on-surface bg-surface-container-low">
-          <h3 className="text-headline-md font-[700] text-on-surface">Direct Reports</h3>
-          <a href="/dashboard/review" className="text-label-bold font-[700] tracking-[0.05em] text-primary hover:underline">
+          <h3 className="text-headline-md font-[700] text-on-surface">
+            Direct Reports
+          </h3>
+          <Link
+            href="/dashboard/review"
+            className="text-label-bold font-[700] tracking-[0.05em] text-primary hover:underline"
+          >
             View All Reviews &rarr;
-          </a>
+          </Link>
         </div>
         <div className="flex flex-col">
           {sheets.slice(0, 5).map((sheet: GoalSheetWithGoals) => (
-            <div key={sheet.id} className="flex justify-between items-center p-md border-b border-on-surface last:border-0 hover:bg-surface-container-low transition-colors">
+            <div
+              key={sheet.id}
+              className="flex justify-between items-center p-md border-b border-on-surface last:border-0 hover:bg-surface-container-low transition-colors"
+            >
               <div className="flex items-center gap-sm">
                 <div className="w-10 h-10 rounded border border-on-surface bg-surface-variant flex items-center justify-center font-[700] text-on-surface shrink-0">
                   {sheet.employee?.full_name?.charAt(0) || "?"}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-label-bold font-[700] text-on-surface">{sheet.employee?.full_name}</span>
-                  <span className="text-label-sm text-on-surface-variant">{sheet.employee?.title}</span>
+                  <span className="text-label-bold font-[700] text-on-surface">
+                    {sheet.employee?.full_name}
+                  </span>
+                  <span className="text-label-sm text-on-surface-variant">
+                    {sheet.employee?.title}
+                  </span>
                 </div>
               </div>
               <div>
-                <span className={`px-sm py-xs border border-on-surface rounded text-label-sm font-[700] uppercase ${
-                  sheet.status === "submitted" ? "bg-tertiary-container text-on-tertiary-container" :
-                  sheet.status === "locked" ? "bg-surface-tint text-on-primary" : "bg-error text-on-error"
-                }`}>
-                  {sheet.status === "submitted" ? "Pending" : sheet.status === "locked" ? "Approved" : "Draft"}
+                <span
+                  className={`px-sm py-xs border border-on-surface rounded text-label-sm font-[700] uppercase ${
+                    sheet.status === "submitted"
+                      ? "bg-tertiary-container text-on-tertiary-container"
+                      : sheet.status === "locked"
+                        ? "bg-surface-tint text-on-primary"
+                        : "bg-error text-on-error"
+                  }`}
+                >
+                  {sheet.status === "submitted"
+                    ? "Pending"
+                    : sheet.status === "locked"
+                      ? "Approved"
+                      : "Draft"}
                 </span>
               </div>
             </div>
@@ -364,9 +398,10 @@ async function AdminDashboardView() {
 }
 
 export default async function DashboardPage() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = (await createServerClient()) as any;
-  const { data: { user } } = await supabase.auth.getUser();
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) return null;
 
@@ -376,8 +411,7 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userRole = profile ? (profile as any).role : "employee";
+  const userRole = profile ? (profile as { role?: string }).role : "employee";
   const role = userRole || "employee";
 
   if (role === "admin") {

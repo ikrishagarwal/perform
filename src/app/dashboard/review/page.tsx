@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getTeamSheets } from "@/lib/actions/goal-sheet.actions";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -10,10 +11,7 @@ export const metadata: Metadata = {
 
 /* ─── Status Badge ─── */
 function ReviewStatusBadge({ status }: { status: string }) {
-  const config: Record<
-    string,
-    { bg: string; text: string; label: string }
-  > = {
+  const config: Record<string, { bg: string; text: string; label: string }> = {
     submitted: {
       bg: "bg-tertiary-container",
       text: "text-on-tertiary-container",
@@ -43,7 +41,9 @@ function ReviewStatusBadge({ status }: { status: string }) {
 
 export default async function ManagerReviewPage() {
   const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) return null;
 
@@ -113,10 +113,10 @@ export default async function ManagerReviewPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      employee?.full_name
+                      (employee?.full_name
                         .split(" ")
                         .map((n: string) => n[0])
-                        .join("") ?? "?"
+                        .join("") ?? "?")
                     )}
                   </div>
                   <div className="flex flex-col">
@@ -161,11 +161,11 @@ export default async function ManagerReviewPage() {
 
                 {/* Actions */}
                 <div className="md:col-span-2 w-full flex justify-end md:block mt-sm md:mt-0">
-                  <button
-                    disabled={isDraft}
-                    className={`w-full md:w-auto px-md py-sm border border-on-surface bg-surface-container-lowest text-on-surface text-label-bold font-[700] tracking-[0.05em] text-center transition-all ${
+                  <Link
+                    href={`/dashboard/review/${sheet.id}`}
+                    className={`w-full md:w-auto inline-block px-md py-sm border border-on-surface bg-surface-container-lowest text-on-surface text-label-bold font-[700] tracking-[0.05em] text-center transition-all ${
                       isDraft
-                        ? "opacity-50 cursor-not-allowed"
+                        ? "opacity-50 pointer-events-none"
                         : "hover:shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-px hover:-translate-x-px"
                     }`}
                   >
@@ -179,7 +179,7 @@ export default async function ManagerReviewPage() {
                     ) : (
                       "Review"
                     )}
-                  </button>
+                  </Link>
                 </div>
               </div>
             );

@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { getOrCreateMySheet, getGoalSheet, updateSheetStatus } from "@/lib/actions/goal-sheet.actions";
+import {
+  getOrCreateMySheet,
+  getGoalSheet,
+  updateSheetStatus,
+} from "@/lib/actions/goal-sheet.actions";
 import { upsertGoals } from "@/lib/actions/goal.actions";
+import NeoToast from "@/components/feedback/NeoToast";
+import { useToast } from "@/hooks/useToast";
 import type { GoalInsert } from "@/lib/database.types";
 
 /* ─── Types ─── */
@@ -33,33 +39,52 @@ export default function GoalWorkspace() {
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { toast, showSuccess, showError } = useToast();
 
   useEffect(() => {
     async function loadData() {
       try {
-
         const { supabase } = await import("@/lib/supabase/client");
-        const { data: { user } } = await supabase.auth.getUser();
-        
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
         if (!user) return;
 
         const sheet = await getOrCreateMySheet(user.id);
         const fullSheet = await getGoalSheet(sheet.id);
-        
+
         setSheetId(fullSheet.id);
         if (fullSheet.goals.length > 0) {
-          setRows(fullSheet.goals.map(g => ({
-            id: g.id,
-            thrustArea: g.thrust_area,
-            title: g.title,
-            description: g.description,
-            unit: g.uom,
-            target: g.target_value,
-            weightage: g.weightage,
-          })));
+          setRows(
+            fullSheet.goals.map((g) => ({
+              id: g.id,
+              thrustArea: g.thrust_area,
+              title: g.title,
+              description: g.description,
+              unit: g.uom,
+              target: g.target_value,
+              weightage: g.weightage,
+            })),
+          );
         } else {
           // Default empty row
-          setRows([{
+          setRows([
+            {
+              id: generateId(),
+              thrustArea: "Revenue Growth",
+              title: "New Goal",
+              description: "",
+              unit: "numeric_max",
+              target: "100",
+              weightage: 10,
+            },
+          ]);
+        }
+      } catch (err) {
+        console.warn("Using fallback/mock state due to db error", err);
+        setRows([
+          {
             id: generateId(),
             thrustArea: "Revenue Growth",
             title: "New Goal",
@@ -67,19 +92,8 @@ export default function GoalWorkspace() {
             unit: "numeric_max",
             target: "100",
             weightage: 10,
-          }]);
-        }
-      } catch (err) {
-        console.warn("Using fallback/mock state due to db error", err);
-        setRows([{
-          id: generateId(),
-          thrustArea: "Revenue Growth",
-          title: "New Goal",
-          description: "",
-          unit: "numeric_max",
-          target: "100",
-          weightage: 10,
-        }]);
+          },
+        ]);
       } finally {
         setLoading(false);
       }
@@ -89,16 +103,19 @@ export default function GoalWorkspace() {
 
   const totalWeight = rows.reduce((s, r) => s + (r.weightage || 0), 0);
   const deficit = 100 - totalWeight;
-  const isValid = totalWeight === 100 && rows.length <= 8 && rows.every(r => r.weightage >= 10);
+  const isValid =
+    totalWeight === 100 &&
+    rows.length <= 8 &&
+    rows.every((r) => r.weightage >= 10);
   const canAddRow = rows.length < 8;
 
   const updateRow = useCallback(
     (id: string, field: keyof GoalRow, value: string | number) => {
       setRows((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, [field]: value } : r))
+        prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
       );
     },
-    []
+    [],
   );
 
   const removeRow = useCallback((id: string) => {
@@ -125,7 +142,7 @@ export default function GoalWorkspace() {
     if (!isValid || !sheetId) return;
     setSaving(true);
     try {
-      const dbGoals: (GoalInsert & { id?: string })[] = rows.map(r => {
+      const dbGoals: (GoalInsert & { id?: string })[] = rows.map((r) => {
         const base: GoalInsert = {
           goal_sheet_id: sheetId,
           thrust_area: r.thrustArea,
@@ -144,10 +161,10 @@ export default function GoalWorkspace() {
 
       await upsertGoals(sheetId, dbGoals);
       await updateSheetStatus(sheetId, "submitted");
-      alert("Goals submitted successfully!");
+      showSuccess("Goals submitted successfully!");
     } catch (err) {
       console.error(err);
-      alert("Failed to submit goals.");
+      showError("Failed to submit goals.");
     } finally {
       setSaving(false);
     }
@@ -155,6 +172,7 @@ export default function GoalWorkspace() {
 
   return (
     <div className="flex flex-col xl:flex-row gap-xl">
+      <NeoToast toast={toast} />
       {/* ─── Goal Rows Section ─── */}
       <section className="flex-1 max-w-[1200px] flex flex-col gap-lg">
         <header className="mb-md">
@@ -221,9 +239,7 @@ export default function GoalWorkspace() {
                   <input
                     type="text"
                     value={row.unit}
-                    onChange={(e) =>
-                      updateRow(row.id, "unit", e.target.value)
-                    }
+                    onChange={(e) => updateRow(row.id, "unit", e.target.value)}
                     className="w-full flex-1 bg-transparent border border-on-surface text-label-bold font-[700] tracking-[0.05em] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm text-center rounded-none"
                   />
                 </div>
@@ -256,7 +272,7 @@ export default function GoalWorkspace() {
                         updateRow(
                           row.id,
                           "weightage",
-                          parseInt(e.target.value) || 0
+                          parseInt(e.target.value) || 0,
                         )
                       }
                       className="w-full h-full bg-surface-container-lowest border-2 border-primary text-headline-md font-[700] text-primary focus:ring-0 p-sm text-center rounded-none"
@@ -309,9 +325,7 @@ export default function GoalWorkspace() {
               <h2 className="text-headline-md font-[800] uppercase tracking-tight">
                 Validation
               </h2>
-              <span
-                className="material-symbols-outlined text-[32px] filled-icon"
-              >
+              <span className="material-symbols-outlined text-[32px] filled-icon">
                 {isValid ? "check_circle" : "warning"}
               </span>
             </div>
@@ -386,7 +400,9 @@ export default function GoalWorkspace() {
           {/* Submit Button */}
           <div className="p-lg pt-0 mt-auto">
             {loading ? (
-              <div className="w-full text-center p-md text-on-surface-variant font-[500]">Loading workspace...</div>
+              <div className="w-full text-center p-md text-on-surface-variant font-[500]">
+                Loading workspace...
+              </div>
             ) : (
               <button
                 onClick={handleSubmit}

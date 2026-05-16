@@ -1,14 +1,24 @@
 "use server";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* ─────────────────────────────────────────────────────────────
    checkin.actions.ts — Server Actions for quarterly check-ins
    ───────────────────────────────────────────────────────────── */
 
 import { createServerClient } from "@/lib/supabase/server";
-import type { CheckinComment, CheckinCommentInsert, QuarterPhase, PerformanceCycle } from "@/lib/database.types";
+import type { PostgrestSingleResponse } from "@supabase/supabase-js";
+import type {
+  CheckinComment,
+  CheckinCommentInsert,
+  QuarterPhase,
+  PerformanceCycle,
+  Database,
+} from "@/lib/database.types";
 
 // ─── Get comments for a sheet ───────────────────────────────
-export async function getCheckinComments(sheetId: string): Promise<CheckinComment[]> {
+export async function getCheckinComments(
+  sheetId: string,
+): Promise<CheckinComment[]> {
   const db = await createServerClient();
 
   const { data, error } = await db
@@ -17,27 +27,27 @@ export async function getCheckinComments(sheetId: string): Promise<CheckinCommen
     .eq("goal_sheet_id", sheetId)
     .order("created_at", { ascending: true });
 
-  if (error) throw new Error(`Failed to fetch check-in comments: ${error.message}`);
-  return data ?? [];
+  if (error)
+    throw new Error(`Failed to fetch check-in comments: ${error.message}`);
+  return (data as CheckinComment[]) ?? [];
 }
 
 // ─── Upsert a check-in comment ──────────────────────────────
 export async function upsertCheckinComment(
-  comment: CheckinCommentInsert
+  comment: CheckinCommentInsert,
 ): Promise<CheckinComment> {
   const db = await createServerClient();
 
-  const { data, error } = await db
-    .from("checkin_comments")
-    // @ts-expect-error upsert is valid but type check can be strict
-    .upsert(comment, {
+  const { data, error } = (await (db.from("checkin_comments") as any)
+    .upsert(comment as Database["public"]["Tables"]["checkin_comments"]["Insert"], {
       onConflict: "goal_sheet_id,manager_id,quarter_phase",
     })
     .select()
-    .single();
+    .single()) as PostgrestSingleResponse<CheckinComment>;
 
-  if (error) throw new Error(`Failed to save check-in comment: ${error.message}`);
-  return data;
+  if (error)
+    throw new Error(`Failed to save check-in comment: ${error.message}`);
+  return data!;
 }
 
 // ─── Determine active quarter from the cycle calendar ───────
