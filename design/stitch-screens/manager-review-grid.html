@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Manager Review</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary": "#ffffff",
+                      "on-surface": "#1b1b1b",
+                      "tertiary-container": "#a44100",
+                      "on-error-container": "#93000a",
+                      "inverse-primary": "#c3c0ff",
+                      "surface-variant": "#e2e2e2",
+                      "on-tertiary-fixed": "#351000",
+                      "on-primary-container": "#dad7ff",
+                      "surface-dim": "#dadada",
+                      "on-error": "#ffffff",
+                      "surface-tint": "#4d44e3",
+                      "secondary-fixed": "#e2dfff",
+                      "error": "#ba1a1a",
+                      "secondary-container": "#8f8bff",
+                      "on-secondary-fixed-variant": "#3b35a7",
+                      "on-secondary-container": "#231791",
+                      "inverse-surface": "#303030",
+                      "secondary-fixed-dim": "#c3c0ff",
+                      "on-tertiary-fixed-variant": "#7b2f00",
+                      "outline": "#777587",
+                      "primary": "#3525cd",
+                      "background": "#f9f9f9",
+                      "on-secondary-fixed": "#0f0069",
+                      "tertiary": "#7e3000",
+                      "primary-fixed-dim": "#c3c0ff",
+                      "inverse-on-surface": "#f1f1f1",
+                      "on-tertiary-container": "#ffd2be",
+                      "surface": "#f9f9f9",
+                      "surface-bright": "#f9f9f9",
+                      "surface-container-lowest": "#ffffff",
+                      "on-background": "#1b1b1b",
+                      "surface-container-high": "#e8e8e8",
+                      "on-primary-fixed": "#0f0069",
+                      "on-primary-fixed-variant": "#3323cc",
+                      "on-surface-variant": "#464555",
+                      "surface-container": "#eeeeee",
+                      "primary-fixed": "#e2dfff",
+                      "secondary": "#544fc0",
+                      "surface-container-highest": "#e2e2e2",
+                      "outline-variant": "#c7c4d8",
+                      "tertiary-fixed": "#ffdbcc",
+                      "surface-container-low": "#f3f3f3",
+                      "primary-container": "#4f46e5",
+                      "tertiary-fixed-dim": "#ffb695",
+                      "on-secondary": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "error-container": "#ffdad6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-mobile": "16px",
+                      "xs": "4px",
+                      "sm": "8px",
+                      "margin-desktop": "40px",
+                      "base": "4px",
+                      "2xl": "64px",
+                      "gutter": "16px",
+                      "lg": "24px",
+                      "md": "16px",
+                      "xl": "40px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-bold": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-sm": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-lg-mobile": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "display-xl": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-md": [
+                              "Plus Jakarta Sans"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "40px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.03em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "label-bold": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.15",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.03em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-xl": [
+                              "64px",
+                              {
+                                      "lineHeight": "1.05",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md text-body-md min-h-screen flex flex-col md:flex-row">
+<!-- Mobile Top Navigation (Visible only on md:hidden) -->
+<nav class="md:hidden bg-on-surface text-primary border-b-2 border-on-surface flex justify-between items-center w-full px-margin-mobile py-sm sticky top-0 z-50">
+<div class="font-headline-md text-headline-md font-extrabold tracking-tighter text-on-primary">
+            GOAL_PORTAL
+        </div>
+<div class="flex gap-sm">
+<button class="p-xs hover:bg-primary-container hover:text-on-primary-container transition-all duration-150 rounded text-on-primary">
+<span class="material-symbols-outlined">code</span>
+</button>
+<button class="p-xs hover:bg-primary-container hover:text-on-primary-container transition-all duration-150 rounded text-on-primary">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-xs hover:bg-primary-container hover:text-on-primary-container transition-all duration-150 rounded text-on-primary">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</nav>
+<!-- Desktop Side Navigation (Hidden on mobile) -->
+<aside class="hidden md:flex flex-col h-screen w-64 bg-surface border-r-2 border-on-surface p-md gap-lg sticky top-0 shrink-0">
+<div class="flex flex-col gap-xs">
+<h1 class="text-headline-md font-headline-md font-black text-on-surface">Track Progress</h1>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Q4 Cycle Active</span>
+</div>
+<button class="bg-on-surface text-on-primary font-label-bold text-label-bold py-sm px-md border border-on-surface shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-px hover:-translate-x-px transition-transform text-center w-full">
+            Create New Goal
+        </button>
+<nav class="flex-1 flex flex-col gap-sm mt-md">
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high p-md border-2 border-transparent hover:border-on-surface hover:shadow-[2px_2px_0px_0px_#000000] transition-all font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high p-md border-2 border-transparent hover:border-on-surface hover:shadow-[2px_2px_0px_0px_#000000] transition-all font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined">edit_square</span>
+                Workspace
+            </a>
+<a class="flex items-center gap-md bg-primary text-on-primary border-2 border-on-surface shadow-[4px_4px_0px_0px_#000000] -translate-x-1 -translate-y-1 p-md font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined">group_work</span>
+                Manager Review
+            </a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high p-md border-2 border-transparent hover:border-on-surface hover:shadow-[2px_2px_0px_0px_#000000] transition-all font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined">analytics</span>
+                Check-in
+            </a>
+</nav>
+<div class="flex flex-col gap-sm mt-auto border-t-2 border-on-surface pt-md">
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high p-md border-2 border-transparent hover:border-on-surface transition-all font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined">help</span>
+                Support
+            </a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high p-md border-2 border-transparent hover:border-on-surface transition-all font-label-bold text-label-bold" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col min-w-0 max-w-7xl mx-auto w-full p-margin-mobile md:p-margin-desktop gap-xl">
+<!-- Header Section -->
+<header class="flex flex-col gap-sm">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface">Manager Review</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Review and approve team goals for the current cycle. Ensure alignment with departmental objectives.</p>
+</header>
+<!-- Filters -->
+<div class="flex flex-wrap gap-sm items-center">
+<button class="px-md py-sm border-2 border-on-surface bg-on-surface text-on-primary font-label-bold text-label-bold shadow-[4px_4px_0px_0px_#000000] -translate-y-px -translate-x-px">
+                All
+            </button>
+<button class="px-md py-sm border border-on-surface bg-surface-container-lowest text-on-surface font-label-bold text-label-bold hover:bg-surface-container-high transition-colors">
+                Pending
+            </button>
+<button class="px-md py-sm border border-on-surface bg-surface-container-lowest text-on-surface font-label-bold text-label-bold hover:bg-surface-container-high transition-colors">
+                Approved
+            </button>
+</div>
+<!-- Data Table (Bento Style Container) -->
+<div class="bg-surface-container-lowest border-2 border-on-surface shadow-[8px_8px_0px_0px_#000000] overflow-hidden flex flex-col">
+<!-- Table Header (Desktop) -->
+<div class="hidden md:grid grid-cols-12 gap-gutter bg-on-surface text-on-primary p-md border-b border-on-surface items-center font-label-bold text-label-bold">
+<div class="col-span-4">Employee Name</div>
+<div class="col-span-3">Submission Status</div>
+<div class="col-span-3">Total Weightage</div>
+<div class="col-span-2 text-right">Actions</div>
+</div>
+<!-- Table Rows -->
+<div class="flex flex-col">
+<!-- Row 1 -->
+<div class="flex flex-col md:grid md:grid-cols-12 gap-sm md:gap-gutter p-md border-b border-on-surface items-center hover:bg-surface-container-low transition-colors">
+<div class="md:col-span-4 flex items-center gap-sm w-full">
+<div class="w-10 h-10 rounded border border-on-surface overflow-hidden shrink-0 bg-surface-dim">
+<img alt="Profile Picture" class="w-full h-full object-cover" data-alt="A professional headshot of a young woman with a neutral expression, wearing a dark blazer against a stark white background. The image has high contrast, fitting a modern editorial style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDq2e96Ok7fkSyNr0gFXmBD66M4q027m5MQRooMppCtE6pS4nRSs0thDFllrADj06a5huJmwASHucj7ZChbAojOzVQDS-D-dFqrUiwvk_06saf7IWdDuI_0zDKPOpOytAHz5u203TQ5jdED-zLwjGwXKlssfyErcKwm-UfTMWOGYP_6EJJbfaAqHlJdHKNMUIJ7P7ZB0N3KEaNiXSzGAeXV1T1bboYmDjWHIQDj3Ls5MgvWbRxd8r4LH9VyxKdroAdIWzXu83CVrEg"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-bold text-label-bold text-on-surface">Sarah Jenkins</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Senior Developer</span>
+</div>
+</div>
+<div class="md:col-span-3 w-full flex justify-between md:block items-center">
+<span class="md:hidden font-label-bold text-label-bold text-on-surface-variant">Status:</span>
+<span class="inline-flex px-sm py-xs border border-on-surface bg-tertiary-container text-on-tertiary-container font-label-sm text-label-sm rounded uppercase tracking-wider">Pending Review</span>
+</div>
+<div class="md:col-span-3 w-full flex justify-between md:block items-center">
+<span class="md:hidden font-label-bold text-label-bold text-on-surface-variant">Weightage:</span>
+<div class="flex items-center gap-sm w-full max-w-[120px]">
+<span class="font-label-bold text-label-bold text-on-surface">100%</span>
+<div class="h-2 w-full bg-surface-container-high border border-on-surface">
+<div class="h-full bg-primary w-full border-r border-on-surface"></div>
+</div>
+</div>
+</div>
+<div class="md:col-span-2 w-full flex justify-end md:block mt-sm md:mt-0">
+<button class="w-full md:w-auto px-md py-sm border border-on-surface bg-surface-container-lowest text-on-surface font-label-bold text-label-bold hover:shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-px hover:-translate-x-px transition-all text-center">
+                            Review
+                        </button>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="flex flex-col md:grid md:grid-cols-12 gap-sm md:gap-gutter p-md border-b border-on-surface items-center hover:bg-surface-container-low transition-colors">
+<div class="md:col-span-4 flex items-center gap-sm w-full">
+<div class="w-10 h-10 rounded border border-on-surface overflow-hidden shrink-0 bg-surface-dim">
+<img alt="Profile Picture" class="w-full h-full object-cover" data-alt="A professional headshot of a middle-aged man with glasses, wearing a crisp white shirt against a dark grey background. High contrast, sharp focus, fitting an editorial aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJlUJIrrEhb59_8bbzBFeQkzKLjs1SpuXd-0SuwC9SbCfWdczVu8uS3EMzS3pyeC84FNDsLXKph5t2frMhWIFJwTM-XKsfkBImz0HVTErN9FCyV41ynHTJMpiYHY-izSQ7aMNxk0WokZ1HjOkaojkcGa_oiuUdbBQzS666q3s-qQdQv8HNmipCY9V-jv62mDWX2RK4dhlPVY0qRxZa__G4HSYltnijdg5LKInjeGx9GgdRsY8SfkY1RcPzLV7XTcGlgmLbwGG2vjg"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-bold text-label-bold text-on-surface">David Chen</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">UX Designer</span>
+</div>
+</div>
+<div class="md:col-span-3 w-full flex justify-between md:block items-center">
+<span class="md:hidden font-label-bold text-label-bold text-on-surface-variant">Status:</span>
+<span class="inline-flex px-sm py-xs border border-on-surface bg-surface-tint text-on-primary font-label-sm text-label-sm rounded uppercase tracking-wider">Approved</span>
+</div>
+<div class="md:col-span-3 w-full flex justify-between md:block items-center">
+<span class="md:hidden font-label-bold text-label-bold text-on-surface-variant">Weightage:</span>
+<div class="flex items-center gap-sm w-full max-w-[120px]">
+<span class="font-label-bold text-label-bold text-on-surface">100%</span>
+<div class="h-2 w-full bg-surface-container-high border border-on-surface">
+<div class="h-full bg-primary w-full border-r border-on-surface"></div>
+</div>
+</div>
+</div>
+<div class="md:col-span-2 w-full flex justify-end md:block mt-sm md:mt-0">
+<button class="w-full md:w-auto px-md py-sm border border-on-surface bg-surface-container-lowest text-on-surface font-label-bold text-label-bold hover:shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-px hover:-translate-x-px transition-all text-center flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">visibility</span> View
+                        </button>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="flex flex-col md:grid md:grid-cols-12 gap-sm md:gap-gutter p-md border-b border-on-surface items-center hover:bg-surface-container-low transition-colors">
+<div class="md:col-span-4 flex items-center gap-sm w-full">
+<div class="w-10 h-10 rounded border border-on-surface overflow-hidden shrink-0 bg-surface-dim flex items-center justify-center text-on-surface font-label-bold text-label-bold">
+                             MR
+                        </div>
+<div class="flex flex-col">
+<span class="font-label-bold text-label-bold text-on-surface">Maria Rodriguez</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Product Manager</span>
+</div>
+</div>
+<div class="md:col-span-3 w-full flex justify-between md:block items-center">
+<span class="md:hidden font-label-bold text-label-bold text-on-surface-variant">Status:</span>
+<span class="inline-flex px-sm py-xs border border-on-surface bg-error text-on-error font-label-sm text-label-sm rounded uppercase tracking-wider">Draft</span>
+</div>
+<div class="md:col-span-3 w-full flex justify-between md:block items-center">
+<span class="md:hidden font-label-bold text-label-bold text-on-surface-variant">Weightage:</span>
+<div class="flex items-center gap-sm w-full max-w-[120px]">
+<span class="font-label-bold text-label-bold text-on-surface">80%</span>
+<div class="h-2 w-full bg-surface-container-high border border-on-surface">
+<div class="h-full bg-tertiary w-[80%] border-r border-on-surface"></div>
+</div>
+</div>
+</div>
+<div class="md:col-span-2 w-full flex justify-end md:block mt-sm md:mt-0">
+<button class="w-full md:w-auto px-md py-sm border border-on-surface bg-surface-container-lowest text-on-surface font-label-bold text-label-bold hover:shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-px hover:-translate-x-px transition-all text-center opacity-50 cursor-not-allowed">
+                            Review
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

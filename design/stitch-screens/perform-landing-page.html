@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PERFORM - Precision in Alignment</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error": "#ba1a1a",
+                      "primary-container": "#4f46e5",
+                      "inverse-surface": "#303030",
+                      "secondary-fixed-dim": "#c3c0ff",
+                      "inverse-primary": "#c3c0ff",
+                      "on-surface": "#1b1b1b",
+                      "on-tertiary-fixed-variant": "#7b2f00",
+                      "on-secondary-fixed-variant": "#3b35a7",
+                      "on-tertiary": "#ffffff",
+                      "primary": "#3525cd",
+                      "tertiary-fixed": "#ffdbcc",
+                      "surface-tint": "#4d44e3",
+                      "tertiary-container": "#a44100",
+                      "on-primary-fixed-variant": "#3323cc",
+                      "on-tertiary-container": "#ffd2be",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#f1f1f1",
+                      "tertiary": "#7e3000",
+                      "surface-variant": "#e2e2e2",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-low": "#f3f3f3",
+                      "on-error": "#ffffff",
+                      "outline": "#777587",
+                      "on-surface-variant": "#464555",
+                      "tertiary-fixed-dim": "#ffb695",
+                      "on-error-container": "#93000a",
+                      "secondary-fixed": "#e2dfff",
+                      "secondary-container": "#8f8bff",
+                      "primary-fixed-dim": "#c3c0ff",
+                      "secondary": "#544fc0",
+                      "on-secondary-fixed": "#0f0069",
+                      "background": "#f9f9f9",
+                      "surface-dim": "#dadada",
+                      "primary-fixed": "#e2dfff",
+                      "outline-variant": "#c7c4d8",
+                      "surface-container-high": "#e8e8e8",
+                      "on-primary": "#ffffff",
+                      "surface-bright": "#f9f9f9",
+                      "on-primary-fixed": "#0f0069",
+                      "on-background": "#1b1b1b",
+                      "surface-container": "#eeeeee",
+                      "on-secondary-container": "#231791",
+                      "surface": "#f9f9f9",
+                      "on-primary-container": "#dad7ff",
+                      "surface-container-highest": "#e2e2e2",
+                      "on-tertiary-fixed": "#351000",
+                      "error-container": "#ffdad6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "sm": "8px",
+                      "margin-mobile": "16px",
+                      "base": "4px",
+                      "xl": "40px",
+                      "margin-desktop": "40px",
+                      "xs": "4px",
+                      "2xl": "64px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "gutter": "16px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-sm": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-bold": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "display-xl": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-md": [
+                              "Plus Jakarta Sans"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.03em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.15",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg": [
+                              "40px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.03em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "label-bold": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-xl": [
+                              "64px",
+                              {
+                                      "lineHeight": "1.05",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .solid-shadow-sm { box-shadow: 4px 4px 0px 0px #000000; }
+        .solid-shadow-md { box-shadow: 8px 8px 0px 0px #000000; }
+        .border-sharp { border: 1px solid #000000; }
+        .border-sharp-thick { border: 2px solid #000000; }
+        
+        /* Neobrutalism Button Hover */
+        .btn-neo {
+            transition: all 0.2s ease;
+        }
+        .btn-neo:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0px 0px #000000;
+        }
+        .btn-neo:active {
+            transform: translate(0, 0);
+            box-shadow: 0px 0px 0px 0px #000000;
+        }
+    </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+<!-- TopAppBar from JSON -->
+<header class="bg-surface dark:bg-on-surface text-primary dark:text-primary-fixed-dim font-headline-md text-headline-md font-body-md text-body-md font-label-bold text-label-bold font-headline-md text-headline-md font-black tracking-tighter text-on-surface dark:text-inverse-on-surface docked full-width top-0 z-50 border-b-2 border-on-surface dark:border-outline-variant flat no shadows transition-all duration-200 active:translate-y-[2px] max-w-7xl mx-auto px-margin-desktop h-20 flex justify-between items-center w-full bg-surface-container-lowest sticky border-b border-black">
+<div class="flex items-center gap-xl">
+<span class="font-headline-md text-headline-md font-black tracking-tighter text-on-surface">PERFORM</span>
+<nav class="hidden md:flex items-center gap-lg">
+<a class="font-label-bold text-label-bold text-on-surface-variant hover:text-primary hover:underline decoration-2 underline-offset-4 transition-colors" href="#">Goals</a>
+<a class="font-label-bold text-label-bold text-primary border-b-2 border-primary hover:text-primary hover:underline decoration-2 underline-offset-4 transition-colors" href="#">Alignment</a>
+<a class="font-label-bold text-label-bold text-on-surface-variant hover:text-primary hover:underline decoration-2 underline-offset-4 transition-colors" href="#">Insights</a>
+<a class="font-label-bold text-label-bold text-on-surface-variant hover:text-primary hover:underline decoration-2 underline-offset-4 transition-colors" href="#">Pricing</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<button class="font-label-bold text-label-bold text-on-surface bg-surface-container-lowest border-sharp px-lg py-sm btn-neo hidden md:block">Login</button>
+<button class="font-label-bold text-label-bold text-on-tertiary bg-on-surface border-sharp px-lg py-sm btn-neo">Start Q4 Cycle</button>
+</div>
+</header>
+<main class="flex-grow">
+<!-- Hero Section -->
+<section class="max-w-7xl mx-auto px-margin-desktop py-2xl border-b border-black">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter items-center">
+<div class="md:col-span-8 space-y-lg">
+<h1 class="font-display-xl text-display-xl uppercase leading-none tracking-tighter text-on-surface">
+                        Precision in<br/>Alignment.
+                    </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl border-l-4 border-primary pl-md">
+                        Driving organizational accountability through structured data. A high-stakes goal tracking system engineered for high-performers who value clarity over ornamentation.
+                    </p>
+<div class="pt-md flex gap-md">
+<button class="font-label-bold text-label-bold text-on-tertiary bg-on-surface border-sharp px-lg py-md btn-neo flex items-center gap-sm">
+                            ENTER WORKSPACE
+                            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_forward</span>
+</button>
+<button class="font-label-bold text-label-bold text-on-surface bg-surface-container-lowest border-sharp px-lg py-md btn-neo flex items-center gap-sm">
+                            VIEW MANIFESTO
+                        </button>
+</div>
+</div>
+<div class="md:col-span-4 mt-xl md:mt-0 relative h-64 md:h-full min-h-[300px] border-sharp solid-shadow-md bg-surface-container overflow-hidden">
+<img alt="Data Visualization Dashboard" class="object-cover w-full h-full grayscale opacity-80 mix-blend-multiply" data-alt="A stark, minimalist digital dashboard displaying complex structural data nodes and geometric alignment charts. The aesthetic is high-contrast, editorial neobrutalism, utilizing pure stark white backgrounds and intense solid black lines with strategic vibrant primary indigo accents. The mood is analytical, authoritative, and focused entirely on precision tracking." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDprO55W-1lFZQ8deSSO_V3J2a6GNoAamlBQ9LK3yfIuOWTMs9SI2GjWqddQ6vSNq7Nlhs5UlyqEqsE0DONwurgSOLbtQ6POXESPha7_EO9j0Se5aZ0bUCjxWidVbiwHAwScxFgv_RHr4PNWAGzH6gmiH76mVS4yULgDndE_eJ7N7AFnhj6k2ne2TGqW2s4poMCI0n1miPf2J8ScuAy2ydRlmvMzWuajUCbmXqMmEYJgPNgvmIMIz0gTR6HrZ5wWSFoDB50Wdct2GY"/>
+</div>
+</div>
+</section>
+<!-- Feature Section 1: The Workspace -->
+<section class="max-w-7xl mx-auto px-margin-desktop py-2xl border-b border-black bg-surface-bright">
+<div class="flex flex-col md:flex-row justify-between items-end mb-xl">
+<div>
+<h2 class="font-headline-lg text-headline-lg uppercase tracking-tighter mb-sm">Structured Objectives</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xl">
+                        The Goal Entry Workspace demands precision. 1px borders define the architecture, ensuring every metric is weighed and measured with absolute intent.
+                    </p>
+</div>
+<button class="font-label-bold text-label-bold text-on-surface border-sharp px-md py-sm btn-neo mt-md md:mt-0 flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm">tune</span> CONFIGURATIONS
+                </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Bento Grid Items -->
+<div class="border-sharp bg-surface-container-lowest p-md solid-shadow-sm flex flex-col gap-md">
+<div class="flex justify-between items-start">
+<span class="font-label-bold text-label-bold uppercase bg-surface-container-high px-sm py-xs border-sharp rounded-sm">Q4-OBJ-01</span>
+<span class="material-symbols-outlined text-outline">more_horiz</span>
+</div>
+<h3 class="font-headline-md text-headline-md tracking-tight leading-tight">Increase Market Penetration</h3>
+<div class="mt-auto pt-md border-t border-surface-variant flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Weightage</span>
+<span class="font-label-bold text-label-bold text-primary">35%</span>
+</div>
+</div>
+<div class="border-sharp bg-surface-container-lowest p-md solid-shadow-sm flex flex-col gap-md md:col-span-2">
+<div class="flex justify-between items-center mb-sm border-b border-black pb-sm">
+<span class="font-label-bold text-label-bold uppercase">Key Results Tracker</span>
+<div class="flex gap-xs">
+<span class="h-2 w-8 bg-on-surface block"></span>
+<span class="h-2 w-8 bg-outline-variant block"></span>
+<span class="h-2 w-8 bg-outline-variant block"></span>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="border-sharp p-sm flex items-center justify-between bg-surface-container hover:bg-surface-variant transition-colors cursor-pointer">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_box</span>
+<span class="font-body-md text-body-md">Launch new API documentation</span>
+</div>
+<span class="font-label-bold text-label-bold">100%</span>
+</div>
+<div class="border-sharp p-sm flex items-center justify-between bg-surface-container hover:bg-surface-variant transition-colors cursor-pointer">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-outline">check_box_outline_blank</span>
+<span class="font-body-md text-body-md">Onboard 50 enterprise clients</span>
+</div>
+<span class="font-label-bold text-label-bold">42%</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Feature Section 2: The Review & Metric Section -->
+<section class="max-w-7xl mx-auto px-margin-desktop py-2xl">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-xl">
+<!-- Radical Clarity -->
+<div>
+<h2 class="font-headline-lg text-headline-lg uppercase tracking-tighter mb-sm">Radical Clarity</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-xl">
+                        The Manager Review workflow strips away ambiguity. High-contrast status badges enforce decisive action.
+                    </p>
+<div class="space-y-md">
+<div class="border-sharp bg-surface-container-lowest p-md flex items-center justify-between solid-shadow-sm">
+<div>
+<h4 class="font-label-bold text-label-bold uppercase">Engineering Alignment</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Submitted: Oct 12, 2024</p>
+</div>
+<span class="font-label-sm text-label-sm uppercase bg-surface-container-high border-sharp px-sm py-xs flex items-center gap-xs">
+<span class="w-2 h-2 bg-outline rounded-full block"></span> Draft
+                            </span>
+</div>
+<div class="border-sharp bg-surface-container-lowest p-md flex items-center justify-between solid-shadow-sm">
+<div>
+<h4 class="font-label-bold text-label-bold uppercase">Product Q4 Targets</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Submitted: Oct 14, 2024</p>
+</div>
+<span class="font-label-sm text-label-sm uppercase bg-tertiary-fixed border-sharp px-sm py-xs flex items-center gap-xs text-tertiary">
+<span class="material-symbols-outlined text-[14px]">hourglass_empty</span> Pending
+                            </span>
+</div>
+<div class="border-sharp bg-surface-container-lowest p-md flex items-center justify-between solid-shadow-sm border-l-4 border-l-primary">
+<div>
+<h4 class="font-label-bold text-label-bold uppercase">Sales Expansion</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Approved: Oct 15, 2024</p>
+</div>
+<span class="font-label-sm text-label-sm uppercase bg-on-surface text-on-tertiary border-sharp px-sm py-xs flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">lock</span> Locked
+                            </span>
+</div>
+</div>
+</div>
+<!-- Real-Time Validation -->
+<div class="border-sharp-thick bg-surface-container-lowest p-xl solid-shadow-md flex flex-col justify-between relative overflow-hidden">
+<!-- Subtle background pattern for data density feel -->
+<div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: radial-gradient(#000 1px, transparent 1px); background-size: 16px 16px;"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-lg">
+<h2 class="font-headline-md text-headline-md uppercase tracking-tighter">Real-Time Validation</h2>
+<span class="material-symbols-outlined text-headline-lg">data_usage</span>
+</div>
+<div class="py-xl border-y border-black mb-lg">
+<div class="text-center">
+<span class="font-display-xl text-display-xl font-black block leading-none">100<span class="text-headline-md">%</span></span>
+<span class="font-label-bold text-label-bold uppercase tracking-widest text-on-surface-variant mt-sm block">Total Weightage</span>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="flex justify-between items-center font-label-bold text-label-bold">
+<span>Core Objectives</span>
+<span>65%</span>
+</div>
+<div class="w-full h-4 border-sharp bg-surface-container">
+<div class="h-full bg-on-surface w-[65%] border-r border-black"></div>
+</div>
+<div class="flex justify-between items-center font-label-bold text-label-bold pt-sm">
+<span>Stretch Goals</span>
+<span>35%</span>
+</div>
+<div class="w-full h-4 border-sharp bg-surface-container">
+<div class="h-full bg-primary w-[35%] border-r border-black"></div>
+</div>
+</div>
+<div class="mt-lg bg-surface-container-high border-sharp p-sm flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-sm text-label-sm uppercase">Validation Complete. Ready for lock.</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer from JSON -->
+<footer class="bg-on-surface dark:bg-surface-container-lowest text-surface dark:text-on-surface font-label-bold text-label-bold font-body-md text-body-md font-headline-md text-headline-md font-black text-surface dark:text-on-surface full-width bottom-0 border-t-2 border-on-surface dark:border-outline-variant flat no shadows text-primary-fixed-dim dark:text-primary underline text-surface-variant dark:text-on-surface-variant hover:text-surface dark:hover:text-primary transition-colors transition-transform duration-100 hover:-translate-y-0.5 max-w-7xl mx-auto px-margin-desktop py-xl flex flex-col md:flex-row justify-between items-start gap-lg bg-on-surface text-surface w-full mt-auto">
+<div class="flex flex-col gap-sm">
+<span class="font-headline-md text-headline-md font-black tracking-tighter">PERFORM</span>
+<p class="font-label-bold text-label-bold text-surface-variant opacity-80 max-w-xs">
+                © 2024 PERFORM PERFORMANCE SYSTEMS. BUILT FOR HIGH-STAKES ALIGNMENT.
+            </p>
+</div>
+<div class="flex flex-col md:flex-row gap-lg md:gap-xl">
+<div class="flex flex-col gap-sm">
+<a class="font-label-bold text-label-bold text-surface-variant hover:text-surface transition-colors" href="#">Terms of Service</a>
+<a class="font-label-bold text-label-bold text-surface-variant hover:text-surface transition-colors" href="#">Privacy Protocol</a>
+</div>
+<div class="flex flex-col gap-sm">
+<a class="font-label-bold text-label-bold text-surface-variant hover:text-surface transition-colors" href="#">Security Standards</a>
+<a class="font-label-bold text-label-bold text-surface-variant hover:text-surface transition-colors" href="#">Q4 Roadmap</a>
+</div>
+</div>
+</footer>
+</body></html>
