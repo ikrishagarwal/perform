@@ -28,7 +28,7 @@ export async function login(formData: FormData) {
         .from("profiles")
         .select("is_active")
         .eq("id", sessionData.user.id)
-        .single();
+        .single() as { data: { is_active: boolean } | null };
 
       if (profile && typeof profile.is_active === 'boolean' && !profile.is_active) {
         await supabase.auth.signOut();

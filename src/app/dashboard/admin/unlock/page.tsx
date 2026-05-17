@@ -46,7 +46,7 @@ export default function UnlockPage() {
   }
 
   const selectedSheet = sheets.find(s => s.id === selectedSheetId);
-  const user = profiles.find(p => p.id === selectedSheet?.user_id);
+  const user = profiles.find(p => p.id === selectedSheet?.employee_id);
 
   return (
     <div className="flex flex-col gap-xl max-w-7xl mx-auto w-full">
@@ -71,7 +71,7 @@ export default function UnlockPage() {
         ) : (
           <div className="space-y-sm">
             {sheets.map((sheet) => {
-              const owner = profiles.find(p => p.id === sheet.user_id);
+              const owner = profiles.find(p => p.id === sheet.employee_id);
               return (
                 <label
                   key={sheet.id}

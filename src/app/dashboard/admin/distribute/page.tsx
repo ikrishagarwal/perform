@@ -3,16 +3,18 @@
 import { useState, useTransition, useEffect } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { distributeSharedGoal } from "@/lib/actions/goal.actions";
+import { getThrustAreas } from "@/lib/actions/admin.actions";
 import NeoToast from "@/components/feedback/NeoToast";
 import { useToast } from "@/hooks/useToast";
 import { Profile, Goal, GoalSheet } from "@/lib/database.types";
 
 export default function DistributePage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [thrustAreas, setThrustAreas] = useState<{ name: string }[]>([]);
   const [sheets, setSheets] = useState<{ id: string; user_name: string }[]>([]);
   const [selectedEmpIds, setSelectedEmpIds] = useState<string[]>([]);
   const [distGoal, setDistGoal] = useState({
-    thrust_area: "Strategic",
+    thrust_area: "",
     title: "",
     description: "",
     uom: "numeric_max",
@@ -24,6 +26,12 @@ export default function DistributePage() {
 
   useEffect(() => {
     supabase.from("profiles").select("*").then(({ data }) => setProfiles(data || []));
+    getThrustAreas().then((areas) => {
+      setThrustAreas(areas);
+      if (areas.length > 0) {
+        setDistGoal((prev) => ({ ...prev, thrust_area: areas[0].name }));
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -61,11 +69,13 @@ export default function DistributePage() {
         }
 
         await distributeSharedGoal({
+          goal_sheet_id: "",
+          parent_goal_id: null,
           thrust_area: distGoal.thrust_area as any,
           title: distGoal.title,
           description: distGoal.description,
           uom: distGoal.uom as any,
-          target_value: distGoal.target_value ? Number(distGoal.target_value) : null,
+          target_value: distGoal.target_value || "",
           weightage: distGoal.weightage,
           actual_achievement: null,
           progress_status: "not_started",
@@ -74,7 +84,7 @@ export default function DistributePage() {
         }, sheetIds);
         
         showSuccess(`Distributed to ${sheetIds.length} employees.`);
-        setDistGoal({ thrust_area: "Strategic", title: "", description: "", uom: "numeric_max", target_value: "", weightage: 10 });
+        setDistGoal({ thrust_area: thrustAreas[0]?.name || "Strategic", title: "", description: "", uom: "numeric_max", target_value: "", weightage: 10 });
         setSelectedEmpIds([]);
       } catch (err) {
         showError(err instanceof Error ? err.message : "Distribution failed");
@@ -110,9 +120,9 @@ export default function DistributePage() {
                 onChange={(e) => setDistGoal({...distGoal, thrust_area: e.target.value})}
                 className="border-2 border-on-surface p-sm bg-surface text-body-lg"
               >
-                <option value="Strategic">Strategic</option>
-                <option value="Operational">Operational</option>
-                <option value="Developmental">Developmental</option>
+                {thrustAreas.map((area) => (
+                  <option key={area.name} value={area.name}>{area.name}</option>
+                ))}
               </select>
             </div>
             <div className="flex flex-col gap-xs">

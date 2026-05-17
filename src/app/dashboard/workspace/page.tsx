@@ -7,6 +7,7 @@ import {
   updateSheetStatus,
 } from "@/lib/actions/goal-sheet.actions";
 import { upsertGoals } from "@/lib/actions/goal.actions";
+import { getThrustAreas } from "@/lib/actions/admin.actions";
 import NeoToast from "@/components/feedback/NeoToast";
 import { useToast } from "@/hooks/useToast";
 import type { GoalInsert } from "@/lib/database.types";
@@ -23,14 +24,6 @@ interface GoalRow {
   parentGoalId?: string | null;
 }
 
-const THRUST_AREAS = [
-  "Revenue Growth",
-  "Operational Efficiency",
-  "Customer Success",
-  "Innovation",
-  "People & Culture",
-];
-
 function generateId() {
   return `new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -40,6 +33,7 @@ export default function GoalWorkspace() {
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [thrustAreas, setThrustAreas] = useState<string[]>([]);
   const { toast, showSuccess, showError } = useToast();
 
   useEffect(() => {
@@ -51,6 +45,13 @@ export default function GoalWorkspace() {
         } = await supabase.auth.getUser();
 
         if (!user) return;
+
+        // Load thrust areas first
+        const areas = await getThrustAreas();
+        const areaNames = areas.map(a => a.name);
+        setThrustAreas(areaNames);
+
+        const defaultThrustArea = areaNames[0] || "Strategic";
 
         const sheet = await getOrCreateMySheet(user.id);
         const fullSheet = await getGoalSheet(sheet.id);
@@ -74,7 +75,7 @@ export default function GoalWorkspace() {
           setRows([
             {
               id: generateId(),
-              thrustArea: "Revenue Growth",
+              thrustArea: defaultThrustArea,
               title: "New Goal",
               description: "",
               unit: "numeric_min",
@@ -85,10 +86,12 @@ export default function GoalWorkspace() {
         }
       } catch (err) {
         console.warn("Using fallback/mock state due to db error", err);
+        // Fallback thrust areas
+        setThrustAreas(["Strategic", "Operational", "Developmental"]);
         setRows([
           {
             id: generateId(),
-            thrustArea: "Revenue Growth",
+            thrustArea: "Strategic",
             title: "New Goal",
             description: "",
             unit: "numeric_min",
@@ -227,7 +230,7 @@ export default function GoalWorkspace() {
                     }
                     className="w-full h-full min-h-[48px] bg-transparent border border-on-surface text-body-md font-[400] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm appearance-none rounded-none cursor-pointer"
                   >
-                    {THRUST_AREAS.map((area) => (
+                    {thrustAreas.map((area) => (
                       <option key={area}>{area}</option>
                     ))}
                   </select>
@@ -337,7 +340,7 @@ export default function GoalWorkspace() {
                     }
                     className="w-full h-full min-h-[48px] bg-transparent border border-on-surface text-body-md font-[400] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm appearance-none rounded-none cursor-pointer"
                   >
-                    {THRUST_AREAS.map((area) => (
+                    {thrustAreas.map((area) => (
                       <option key={area}>{area}</option>
                     ))}
                   </select>

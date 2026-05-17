@@ -336,3 +336,109 @@ export async function getAllManagers(): Promise<Profile[]> {
   if (error) throw new Error(`Failed to fetch managers: ${error.message}`);
   return data ?? [];
 }
+
+// ─── Thrust Areas Management ─────────────────────────────────
+export interface ThrustArea {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export async function getThrustAreas(): Promise<ThrustArea[]> {
+  const db = await createServerClient();
+
+  const { data, error } = await db
+    .from("thrust_areas")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  if (error) throw new Error(`Failed to fetch thrust areas: ${error.message}`);
+  return data ?? [];
+}
+
+export async function createThrustArea(name: string, description?: string) {
+  const db = await createServerClient();
+  const adminDb = await createAdminClient();
+
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: profile } = await db
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin") {
+    throw new Error("Only admins can create thrust areas");
+  }
+
+  const { data, error } = await adminDb
+    .from("thrust_areas")
+    .insert({ name, description: description || null })
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to create thrust area: ${error.message}`);
+  return data;
+}
+
+export async function updateThrustArea(id: string, name: string, description?: string) {
+  const db = await createServerClient();
+  const adminDb = await createAdminClient();
+
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: profile } = await db
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin") {
+    throw new Error("Only admins can update thrust areas");
+  }
+
+  const { data, error } = await adminDb
+    .from("thrust_areas")
+    .update({ name, description: description || null })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to update thrust area: ${error.message}`);
+  return data;
+}
+
+export async function toggleThrustArea(id: string, isActive: boolean) {
+  const db = await createServerClient();
+  const adminDb = await createAdminClient();
+
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: profile } = await db
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin") {
+    throw new Error("Only admins can toggle thrust areas");
+  }
+
+  const { data, error } = await adminDb
+    .from("thrust_areas")
+    .update({ is_active: isActive })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to toggle thrust area: ${error.message}`);
+  return data;
+}

@@ -18,6 +18,7 @@ const getNavItems = (role?: string) => {
     { href: "/dashboard/admin/audit", label: "Audit Logs", icon: "history", roles: ["admin", "manager"], parent: "/dashboard/admin" },
     { href: "/dashboard/admin/distribute", label: "Distribute KPI", icon: "share", roles: ["admin", "manager"], parent: "/dashboard/admin" },
     { href: "/dashboard/admin/unlock", label: "Unlock Sheets", icon: "lock_open", roles: ["admin", "manager"], parent: "/dashboard/admin" },
+    { href: "/dashboard/admin/thrust-areas", label: "Thrust Areas", icon: "category", roles: ["admin"], parent: "/dashboard/admin" },
   ];
   return items.filter(item => item.roles.includes(role || "employee"));
 };
