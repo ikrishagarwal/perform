@@ -21,12 +21,12 @@ import type {
 export async function getAuditLogs(filters?: {
   goalSheetId?: string;
   limit?: number;
-}): Promise<AuditLog[]> {
+}): Promise<(AuditLog & { user_name?: string; goal_title?: string })[]> {
   const db = await createServerClient();
 
   let query = db
     .from("audit_logs")
-    .select("*")
+    .select("*, profiles(full_name), goals(title)")
     .order("created_at", { ascending: false });
 
   if (filters?.goalSheetId) {
@@ -38,7 +38,12 @@ export async function getAuditLogs(filters?: {
 
   const { data, error } = await query;
   if (error) throw new Error(`Failed to fetch audit logs: ${error.message}`);
-  return (data as AuditLog[]) ?? [];
+
+  return (data as any[])?.map((log) => ({
+    ...log,
+    user_name: log.profiles?.full_name || log.modified_by,
+    goal_title: log.goals?.title || log.goal_id,
+  })) ?? [];
 }
 
 // ─── Admin unlock: revert locked sheet to draft ─────────────
