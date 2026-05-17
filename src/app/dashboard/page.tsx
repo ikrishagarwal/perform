@@ -4,9 +4,15 @@ import { calculateProgress } from "@/lib/progress-engine";
 import {
   getOrCreateMySheet,
   getGoalSheet,
+  getTeamSheets,
 } from "@/lib/actions/goal-sheet.actions";
+import {
+  getAllProfiles,
+  getThrustAreas,
+  getAuditLogs,
+} from "@/lib/actions/admin.actions";
 import { createServerClient } from "@/lib/supabase/server";
-import type { Goal, GoalSheetWithGoals } from "@/lib/database.types";
+import type { Goal, GoalSheetWithGoals, Profile } from "@/lib/database.types";
 import type { User } from "@supabase/supabase-js";
 
 export const metadata: Metadata = {
@@ -377,7 +383,23 @@ async function ManagerDashboardView({ user }: { user: User }) {
   );
 }
 
-async function AdminDashboardView() {
+async function AdminDashboardView({ user }: { user: User }) {
+  const [allProfiles, teamSheets, thrustAreas, auditLogs] = await Promise.all([
+    getAllProfiles(),
+    getTeamSheets(user.id),
+    getThrustAreas(),
+    getAuditLogs({ limit: 5 }),
+  ]);
+
+  const employees = allProfiles.filter((p) => p.role === "employee");
+  const managers = allProfiles.filter((p) => p.role === "manager" || p.role === "admin");
+  const activeThrustAreas = thrustAreas.filter((t) => t.is_active);
+
+  const draftCount = teamSheets.filter((s) => s.status === "draft").length;
+  const submittedCount = teamSheets.filter((s) => s.status === "submitted").length;
+  const lockedCount = teamSheets.filter((s) => s.status === "locked").length;
+  const totalSheets = teamSheets.length;
+
   return (
     <div className="flex flex-col gap-lg">
       <header className="mb-xl flex flex-col gap-sm">
@@ -385,13 +407,179 @@ async function AdminDashboardView() {
           Global Operations
         </h2>
         <h1 className="text-headline-lg-mobile md:text-display-xl font-[800] text-on-surface border-b-4 border-on-surface pb-sm inline-block w-fit">
-          Administration Hub
+          Administration Dashboard
         </h1>
       </header>
-      <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-xl shadow-[4px_4px_0px_0px_#000000]">
-        <p className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase text-center py-xl">
-          System audit logs and compliance metrics will be displayed here.
-        </p>
+
+      {/* Quick Stats Row */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+        <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg shadow-[4px_4px_0px_0px_#000000]">
+          <div className="flex justify-between items-start border-b border-outline pb-sm mb-sm">
+            <span className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase">
+              Total Employees
+            </span>
+            <span className="material-symbols-outlined text-on-surface">people</span>
+          </div>
+          <div className="text-headline-lg font-[800] text-on-surface">{employees.length}</div>
+          <div className="text-label-sm text-on-surface-variant">Active workforce</div>
+        </div>
+
+        <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg shadow-[4px_4px_0px_0px_#000000]">
+          <div className="flex justify-between items-start border-b border-outline pb-sm mb-sm">
+            <span className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase">
+              Active Managers
+            </span>
+            <span className="material-symbols-outlined text-on-surface">supervisor_account</span>
+          </div>
+          <div className="text-headline-lg font-[800] text-on-surface">{managers.length}</div>
+          <div className="text-label-sm text-on-surface-variant">Managers & admins</div>
+        </div>
+
+        <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg shadow-[4px_4px_0px_0px_#000000]">
+          <div className="flex justify-between items-start border-b border-outline pb-sm mb-sm">
+            <span className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase">
+              Goal Sheets
+            </span>
+            <span className="material-symbols-outlined text-on-surface">assignment</span>
+          </div>
+          <div className="text-headline-lg font-[800] text-on-surface">{totalSheets}</div>
+          <div className="text-label-sm text-on-surface-variant">
+            {submittedCount} pending, {lockedCount} approved
+          </div>
+        </div>
+
+        <div className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg shadow-[4px_4px_0px_0px_#000000]">
+          <div className="flex justify-between items-start border-b border-outline pb-sm mb-sm">
+            <span className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase">
+              Thrust Areas
+            </span>
+            <span className="material-symbols-outlined text-on-surface">category</span>
+          </div>
+          <div className="text-headline-lg font-[800] text-on-surface">{activeThrustAreas.length}</div>
+          <div className="text-label-sm text-on-surface-variant">Active focus areas</div>
+        </div>
+      </section>
+
+      {/* Team Status Overview */}
+      <section className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg shadow-[4px_4px_0px_0px_#000000]">
+        <h3 className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase mb-md">
+          Goal Sheet Status Overview
+        </h3>
+        {totalSheets > 0 ? (
+          <div className="space-y-md">
+            <div className="flex items-center gap-md">
+              <span className="w-20 text-label-sm font-[500] text-on-surface">Draft</span>
+              <div className="flex-1 h-6 bg-surface-container border border-on-surface rounded overflow-hidden">
+                <div
+                  className="h-full bg-error transition-all"
+                  style={{ width: `${(draftCount / totalSheets) * 100}%` }}
+                />
+              </div>
+              <span className="w-12 text-label-bold font-[700] text-on-surface text-right">{draftCount}</span>
+            </div>
+            <div className="flex items-center gap-md">
+              <span className="w-20 text-label-sm font-[500] text-on-surface">Submitted</span>
+              <div className="flex-1 h-6 bg-surface-container border border-on-surface rounded overflow-hidden">
+                <div
+                  className="h-full bg-tertiary transition-all"
+                  style={{ width: `${(submittedCount / totalSheets) * 100}%` }}
+                />
+              </div>
+              <span className="w-12 text-label-bold font-[700] text-on-surface text-right">{submittedCount}</span>
+            </div>
+            <div className="flex items-center gap-md">
+              <span className="w-20 text-label-sm font-[500] text-on-surface">Approved</span>
+              <div className="flex-1 h-6 bg-surface-container border border-on-surface rounded overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${(lockedCount / totalSheets) * 100}%` }}
+                />
+              </div>
+              <span className="w-12 text-label-bold font-[700] text-on-surface text-right">{lockedCount}</span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant">
+            No goal sheets found for current cycle.
+          </p>
+        )}
+      </section>
+
+      {/* Recent Activity & Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+        {/* Recent Activity */}
+        <section className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg shadow-[4px_4px_0px_0px_#000000]">
+          <h3 className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase mb-md border-b border-outline pb-sm">
+            Recent Activity
+          </h3>
+          {auditLogs.length > 0 ? (
+            <div className="flex flex-col gap-sm">
+              {auditLogs.map((log) => {
+                const changedFields = log.changed_fields || [];
+                const actionLabel = changedFields.length > 0
+                  ? `Updated ${changedFields.map(f => f.field).join(", ")}`
+                  : "Modified";
+                return (
+                  <div
+                    key={log.id}
+                    className="flex items-center justify-between py-sm border-b border-outline last:border-0"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-label-bold font-[700] text-on-surface truncate max-w-[200px]">
+                        {actionLabel}
+                      </span>
+                      <span className="text-label-sm text-on-surface-variant">
+                        {log.user_name || "System"} • {log.goal_title || "N/A"}
+                      </span>
+                    </div>
+                    <span className="text-label-sm text-on-surface-variant whitespace-nowrap">
+                      {new Date(log.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-label-sm text-on-surface-variant">No recent activity</p>
+          )}
+        </section>
+
+        {/* Quick Actions */}
+        <section className="bg-surface-container-lowest border-2 border-on-surface rounded-xl p-lg shadow-[4px_4px_0px_0px_#000000]">
+          <h3 className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase mb-md border-b border-outline pb-sm">
+            Quick Actions
+          </h3>
+          <div className="grid grid-cols-2 gap-md">
+            <Link
+              href="/dashboard/admin/unlock"
+              className="flex flex-col items-center gap-sm p-md border-2 border-on-surface rounded-lg hover:bg-surface-container-high hover:shadow-[2px_2px_0px_0px_#000000] transition-all"
+            >
+              <span className="material-symbols-outlined text-on-surface">lock_open</span>
+              <span className="text-label-bold font-[700] text-on-surface text-center">Unlock Sheets</span>
+            </Link>
+            <Link
+              href="/dashboard/admin/distribute"
+              className="flex flex-col items-center gap-sm p-md border-2 border-on-surface rounded-lg hover:bg-surface-container-high hover:shadow-[2px_2px_0px_0px_#000000] transition-all"
+            >
+              <span className="material-symbols-outlined text-on-surface">share</span>
+              <span className="text-label-bold font-[700] text-on-surface text-center">Distribute KPI</span>
+            </Link>
+            <Link
+              href="/dashboard/admin/employees"
+              className="flex flex-col items-center gap-sm p-md border-2 border-on-surface rounded-lg hover:bg-surface-container-high hover:shadow-[2px_2px_0px_0px_#000000] transition-all"
+            >
+              <span className="material-symbols-outlined text-on-surface">people</span>
+              <span className="text-label-bold font-[700] text-on-surface text-center">Employees</span>
+            </Link>
+            <Link
+              href="/dashboard/workspace"
+              className="flex flex-col items-center gap-sm p-md border-2 border-on-surface rounded-lg hover:bg-surface-container-high hover:shadow-[2px_2px_0px_0px_#000000] transition-all"
+            >
+              <span className="material-symbols-outlined text-on-surface">add_circle</span>
+              <span className="text-label-bold font-[700] text-on-surface text-center">Create Goal</span>
+            </Link>
+          </div>
+        </section>
       </div>
     </div>
   );
@@ -415,7 +603,7 @@ export default async function DashboardPage() {
   const role = userRole || "employee";
 
   if (role === "admin") {
-    return <AdminDashboardView />;
+    return <AdminDashboardView user={user} />;
   } else if (role === "manager") {
     return <ManagerDashboardView user={user} />;
   } else {

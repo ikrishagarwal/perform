@@ -63,7 +63,7 @@ export async function middleware(request: NextRequest) {
   if (isAuthRoute && user) {
     // Redirect authenticated users away from login to their role-specific home
     const url = request.nextUrl.clone();
-    url.pathname = role === "admin" ? "/dashboard/admin" : "/dashboard";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 
@@ -74,10 +74,6 @@ export async function middleware(request: NextRequest) {
     }
     if (pathname.startsWith("/dashboard/review") && !["manager", "admin"].includes(role)) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-    // Admin hitting root dashboard -> redirect to admin hub
-    if (pathname === "/dashboard" && role === "admin") {
-      return NextResponse.redirect(new URL("/dashboard/admin", request.url));
     }
   }
 
