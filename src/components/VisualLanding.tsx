@@ -39,7 +39,7 @@ export default function VisualLanding({ profile }: VisualLandingProps) {
             .eq("employee_id", profile.id)
             .order("created_at", { ascending: false })
             .limit(1)
-            .maybeSingle();
+            .maybeSingle() as { data: { id: string; status: string; performance_cycles: { cycle_year: number } } | null };
 
           if (sheet) {
             setSheetStatus(sheet.status.toUpperCase());

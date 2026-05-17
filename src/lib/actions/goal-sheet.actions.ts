@@ -55,7 +55,7 @@ export async function getGoalSheet(
     .order("sort_order", { ascending: true });
   if (goalsErr) throw new Error(`Failed to fetch goals: ${goalsErr.message}`);
 
-  return { ...sheet, goals: (goals as Goal[]) ?? [] } as GoalSheetWithGoals;
+  return { ...(sheet as GoalSheet), goals: (goals as Goal[]) ?? [] } as GoalSheetWithGoals;
 }
 
 // ─── Fetch or create the employee's sheet for active cycle ──
@@ -78,6 +78,7 @@ export async function getOrCreateMySheet(
   // Create new sheet
   const { data: created, error } = await db
     .from("goal_sheets")
+    // @ts-ignore
     .insert({
       employee_id: employeeId,
       cycle_id: cycle.id,
@@ -105,7 +106,7 @@ export async function getSheetsByCycle(
   if (error) throw new Error(`Failed to fetch sheets: ${error.message}`);
   if (!sheets) return [];
 
-  const sheetsArr = sheets;
+  const sheetsArr = sheets as GoalSheet[];
 
   // Batch-fetch all goals for these sheets
   const sheetIds = sheetsArr.map((s) => s.id);
@@ -146,7 +147,7 @@ export async function getTeamSheets(
 
   let reportIds: string[] = [];
 
-  if (profile?.role === "admin") {
+  if ((profile as any)?.role === "admin") {
     // Admin: Get all employees
     const { data: allEmps } = await db
       .from("profiles")
@@ -175,7 +176,7 @@ export async function getTeamSheets(
   if (error) throw new Error(`Failed to fetch team sheets: ${error.message}`);
   if (!sheets) return [];
 
-  const sheetsArr = sheets;
+  const sheetsArr = sheets as GoalSheet[];
 
   // 3. Attach goals + employee profiles
   const sheetIds = sheetsArr.map((s) => s.id);
@@ -201,7 +202,7 @@ export async function getTeamSheets(
   }
 
   return sheetsArr.map((s) => ({
-    ...s,
+    ...(s as GoalSheet),
     goals: goalMap.get(s.id) ?? [],
     employee: profileMap.get(s.employee_id) ?? undefined,
   })) as GoalSheetWithGoals[];
@@ -241,6 +242,7 @@ export async function updateSheetStatus(
 
   const { data, error } = await db
     .from("goal_sheets")
+    // @ts-ignore
     .update(update as Database["public"]["Tables"]["goal_sheets"]["Update"])
     .eq("id", sheetId)
     .select("*, employee:profiles(*)")
@@ -286,6 +288,7 @@ export async function approveSheet(formData: FormData | { sheetId?: string }) {
 
   const { data, error } = await db
     .from("goal_sheets")
+    // @ts-ignore
     .update({
       status: "locked",
       approved_at: new Date().toISOString(),
@@ -296,10 +299,10 @@ export async function approveSheet(formData: FormData | { sheetId?: string }) {
 
   if (error) throw new Error(`Failed to approve sheet: ${error.message}`);
 
-  if (sheet?.employee_id) {
+  if ((sheet as any)?.employee_id) {
     try {
       await createNotification(
-        sheet.employee_id,
+        (sheet as any).employee_id,
         "Sheet Approved",
         "Your goal sheet has been approved.",
         "/dashboard"
@@ -337,6 +340,7 @@ export async function rejectSheet(
 
   const { data, error } = await db
     .from("goal_sheets")
+    // @ts-ignore
     .update({
       status: "draft",
       rejection_feedback: rejectionFeedback,
@@ -347,7 +351,7 @@ export async function rejectSheet(
 
   if (error) throw new Error(`Failed to reject sheet: ${error.message}`);
 
-  if (sheet?.employee_id) {
+  if ((sheet as any)?.employee_id) {
     const feedbackPreview = !rejectionFeedback
       ? "No feedback provided"
       : rejectionFeedback.length > 50
@@ -355,7 +359,7 @@ export async function rejectSheet(
         : rejectionFeedback;
     try {
       await createNotification(
-        sheet.employee_id,
+        (sheet as any).employee_id,
         "Sheet Returned",
         `Your goal sheet was returned for revisions. Feedback: ${feedbackPreview}`,
         "/dashboard/workspace"

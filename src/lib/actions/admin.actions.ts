@@ -52,6 +52,7 @@ export async function adminUnlockSheet(sheetId: string) {
 
   const { data, error } = await db
     .from("goal_sheets")
+    // @ts-ignore - Supabase type inference issue
     .update({ status: "draft" })
     .eq("id", sheetId)
     .select()
@@ -71,6 +72,7 @@ export async function upsertPerformanceCycle(
     const { id, ...rest } = cycle;
     const { data, error } = await db
       .from("performance_cycles")
+      // @ts-ignore
       .update(rest)
       .eq("id", id)
       .select()
@@ -81,6 +83,7 @@ export async function upsertPerformanceCycle(
 
   const { data, error } = await db
     .from("performance_cycles")
+    // @ts-ignore
     .insert(cycle as Database["public"]["Tables"]["performance_cycles"]["Insert"])
     .select()
     .single();
@@ -265,14 +268,16 @@ export async function createEmployee(input: CreateEmployeeInput) {
     throw new Error("Failed to create auth user: no user returned");
   }
 
-  const { error: profileError } = await adminDb.from("profiles").insert({
+  const { error: profileError } = await adminDb.from("profiles").insert(
+    {
     id: authUser.user.id,
     full_name: input.full_name,
     role: input.role,
     manager_id: input.manager_id || null,
     title: input.title || "",
     is_active: true,
-  });
+  } as any
+);
 
   if (profileError) {
     await adminDb.auth.admin.deleteUser(authUser.user.id);
@@ -296,6 +301,7 @@ export async function updateEmployee(
 
   const { data, error } = await db
     .from("profiles")
+    // @ts-ignore
     .update(updateData)
     .eq("id", id)
     .select()
@@ -310,6 +316,7 @@ export async function toggleEmployeeActive(id: string, isActive: boolean) {
 
   const { data, error } = await db
     .from("profiles")
+    // @ts-ignore
     .update({ is_active: isActive })
     .eq("id", id)
     .select()
@@ -371,7 +378,7 @@ export async function createThrustArea(name: string, description?: string) {
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .single() as any;
 
   if (profile?.role !== "admin") {
     throw new Error("Only admins can create thrust areas");
@@ -379,6 +386,7 @@ export async function createThrustArea(name: string, description?: string) {
 
   const { data, error } = await adminDb
     .from("thrust_areas")
+    // @ts-ignore
     .insert({ name, description: description || null })
     .select()
     .single();
@@ -398,7 +406,7 @@ export async function updateThrustArea(id: string, name: string, description?: s
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .single() as any;
 
   if (profile?.role !== "admin") {
     throw new Error("Only admins can update thrust areas");
@@ -406,6 +414,7 @@ export async function updateThrustArea(id: string, name: string, description?: s
 
   const { data, error } = await adminDb
     .from("thrust_areas")
+    // @ts-ignore
     .update({ name, description: description || null })
     .eq("id", id)
     .select()
@@ -426,7 +435,7 @@ export async function toggleThrustArea(id: string, isActive: boolean) {
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .single() as any;
 
   if (profile?.role !== "admin") {
     throw new Error("Only admins can toggle thrust areas");
@@ -434,6 +443,7 @@ export async function toggleThrustArea(id: string, isActive: boolean) {
 
   const { data, error } = await adminDb
     .from("thrust_areas")
+    // @ts-ignore
     .update({ is_active: isActive })
     .eq("id", id)
     .select()

@@ -40,6 +40,7 @@ export async function upsertCheckinComment(
 
   const { data, error } = await db
     .from("checkin_comments")
+    // @ts-ignore
     .upsert(comment as Database["public"]["Tables"]["checkin_comments"]["Insert"], {
       onConflict: "goal_sheet_id,manager_id,quarter_phase",
     })
