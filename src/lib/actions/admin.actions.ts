@@ -452,3 +452,377 @@ export async function toggleThrustArea(id: string, isActive: boolean) {
   if (error) throw new Error(`Failed to toggle thrust area: ${error.message}`);
   return data;
 }
+
+// ─── Phase Management ─────────────────────────────────────
+
+export interface PhaseInfo {
+  phase: string;
+  phaseLabel: string;
+  isAutoMode: boolean;
+  windowStart: string;
+  windowEnd: string;
+}
+
+export interface PhaseStats {
+  phase: string;
+  totalEmployees: number;
+  submittedCount: number;
+  employees: {
+    id: string;
+    name: string;
+    submitted: boolean;
+    submittedAt?: string;
+  }[];
+}
+
+export interface EmployeePhaseProgress {
+  employeeId: string;
+  employeeName: string;
+  goalSettingStatus: "submitted" | "pending" | null;
+  q1Status: "submitted" | "pending" | null;
+  q2Status: "submitted" | "pending" | null;
+  q3Status: "submitted" | "pending" | null;
+  q4Status: "submitted" | "pending" | null;
+}
+
+export interface GoalCheckin {
+  id: string;
+  goal_id: string;
+  quarter_phase: string;
+  actual_achievement: string | null;
+  progress_status: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getCurrentPhase(): Promise<PhaseInfo> {
+  const db = await createServerClient();
+
+  const { data: cycle } = await db
+    .from("performance_cycles")
+    .select("*")
+    .eq("is_active", true)
+    .single() as { data: any };
+
+  const phaseLabels: Record<string, string> = {
+    GOAL_SETTING: "Goal Setting",
+    Q1: "Q1 Check-in",
+    Q2: "Q2 Check-in",
+    Q3: "Q3 Check-in",
+    Q4_Annual: "Q4 Annual",
+  };
+
+  const currentPhase = cycle?.current_phase || "GOAL_SETTING";
+
+  return {
+    phase: currentPhase,
+    phaseLabel: phaseLabels[currentPhase] || currentPhase,
+    isAutoMode: cycle?.is_auto_mode ?? false,
+    windowStart: getPhaseWindowStart(cycle, currentPhase),
+    windowEnd: getPhaseWindowEnd(cycle, currentPhase),
+  };
+}
+
+function getPhaseWindowStart(cycle: any, phase: string): string {
+  if (!cycle) return "";
+  switch (phase) {
+    case "GOAL_SETTING": return cycle.goal_setting_start;
+    case "Q1": return cycle.q1_start;
+    case "Q2": return cycle.q2_start;
+    case "Q3": return cycle.q3_start;
+    case "Q4_Annual": return cycle.q4_start;
+    default: return "";
+  }
+}
+
+function getPhaseWindowEnd(cycle: any, phase: string): string {
+  if (!cycle) return "";
+  switch (phase) {
+    case "GOAL_SETTING": return cycle.goal_setting_end;
+    case "Q1": return cycle.q1_end;
+    case "Q2": return cycle.q2_end;
+    case "Q3": return cycle.q3_end;
+    case "Q4_Annual": return cycle.q4_end;
+    default: return "";
+  }
+}
+
+export async function setCurrentPhase(phase: string) {
+  const db = await createServerClient();
+  const adminDb = await createAdminClient();
+
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: profile } = await db
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single() as any;
+
+  if (profile?.role !== "admin") {
+    throw new Error("Only admins can change phases");
+  }
+
+  await (adminDb.from("performance_cycles") as any).update({
+    current_phase: phase,
+    is_auto_mode: false,
+  }).eq("is_active", true);
+
+  const { data: cycle } = await adminDb
+    .from("performance_cycles")
+    .select("*")
+    .eq("is_active", true)
+    .single() as { data: any };
+
+  if (!cycle) throw new Error("No active performance cycle found");
+  return cycle;
+}
+
+export async function toggleAutoMode(enabled: boolean) {
+  const db = await createServerClient();
+  const adminDb = await createAdminClient();
+
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: profile } = await db
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single() as any;
+
+  if (profile?.role !== "admin") {
+    throw new Error("Only admins can toggle auto mode");
+  }
+
+  await (adminDb.from("performance_cycles") as any).update({
+    is_auto_mode: enabled,
+  }).eq("is_active", true);
+
+  const { data: cycle2 } = await adminDb
+    .from("performance_cycles")
+    .select("*")
+    .eq("is_active", true)
+    .single() as { data: any };
+
+  if (!cycle2) throw new Error("No active performance cycle found");
+  return cycle2;
+}
+
+export async function getPhaseStats(phase: string): Promise<PhaseStats> {
+  const db = await createServerClient();
+
+  const { data: cycle } = await db
+    .from("performance_cycles")
+    .select("id")
+    .eq("is_active", true)
+    .single() as { data: any };
+
+  if (!cycle) {
+    return { phase, totalEmployees: 0, submittedCount: 0, employees: [] };
+  }
+
+  const { data: employees } = await db
+    .from("profiles")
+    .select("id, full_name")
+    .eq("role", "employee")
+    .eq("is_active", true) as { data: any };
+
+  const { data: goalSheets } = await db
+    .from("goal_sheets")
+    .select("id, employee_id")
+    .eq("cycle_id", cycle.id) as { data: any };
+
+  const goalSheetIds = goalSheets?.map((gs: any) => gs.id) || [];
+  const employeeIds = goalSheets?.map((gs: any) => gs.employee_id) || [];
+
+  let submittedCount = 0;
+  const employeeProgress: PhaseStats["employees"] = [];
+
+  if (phase === "GOAL_SETTING") {
+    const { data: submittedSheets } = await db
+      .from("goal_sheets")
+      .select("employee_id, submitted_at")
+      .eq("cycle_id", cycle.id)
+      .neq("status", "draft") as { data: any };
+
+    const submittedMap = new Map<string, string>(submittedSheets?.map((s: any) => [s.employee_id, s.submitted_at]) || []);
+
+    for (const emp of employees || []) {
+      const submitted = submittedMap.has(emp.id) || employeeIds.includes(emp.id);
+      if (submitted) submittedCount++;
+      employeeProgress.push({
+        id: emp.id,
+        name: emp.full_name,
+        submitted: submitted,
+        submittedAt: submittedMap.get(emp.id) || undefined,
+      });
+    }
+  } else {
+    const { data: checkins } = await db
+      .from("goal_checkins")
+      .select("goal_id, created_at, goals(goal_sheet(employee_id))")
+      .eq("quarter_phase", phase) as { data: any };
+
+    const submittedGoals = new Set(
+      checkins?.map((c: any) => c.goals?.goal_sheet?.employee_id).filter(Boolean) || []
+    );
+
+    for (const emp of employees || []) {
+      const submitted = submittedGoals.has(emp.id);
+      if (submitted) submittedCount++;
+      employeeProgress.push({
+        id: emp.id,
+        name: emp.full_name,
+        submitted,
+      });
+    }
+  }
+
+  return {
+    phase,
+    totalEmployees: employees?.length || 0,
+    submittedCount,
+    employees: employeeProgress,
+  };
+}
+
+export async function getAllEmployeeProgress(): Promise<EmployeePhaseProgress[]> {
+  const db = await createServerClient();
+
+  const { data: cycle } = await db
+    .from("performance_cycles")
+    .select("id")
+    .eq("is_active", true)
+    .single() as { data: any };
+
+  if (!cycle) return [];
+
+  const { data: employees } = await db
+    .from("profiles")
+    .select("id, full_name")
+    .eq("role", "employee")
+    .eq("is_active", true)
+    .order("full_name") as { data: any };
+
+  const { data: goalSheets } = await db
+    .from("goal_sheets")
+    .select("id, employee_id, status, submitted_at")
+    .eq("cycle_id", cycle.id) as { data: any };
+
+  const { data: checkins } = await db
+    .from("goal_checkins")
+    .select("*") as { data: any };
+
+  const goalSheetMap = new Map(goalSheets?.map((gs: any) => [gs.employee_id, gs]) || []);
+  const checkinMap = new Map<string, GoalCheckin[]>();
+
+  for (const checkin of checkins || []) {
+    const { data: goal } = await db
+      .from("goals")
+      .select("goal_sheet_id")
+      .eq("id", checkin.goal_id)
+      .single() as { data: any };
+
+    if (goal) {
+      const { data: gs } = await db
+        .from("goal_sheets")
+        .select("employee_id")
+        .eq("id", goal.goal_sheet_id)
+        .single() as { data: any };
+
+      if (gs?.employee_id) {
+        const existing = checkinMap.get(gs.employee_id) || [];
+        existing.push(checkin);
+        checkinMap.set(gs.employee_id, existing);
+      }
+    }
+  }
+
+  const result: EmployeePhaseProgress[] = [];
+
+  for (const emp of employees || []) {
+    const sheet = goalSheetMap.get(emp.id);
+    const empCheckins = checkinMap.get(emp.id) || [];
+
+    const getStatus = (phase: string): "submitted" | "pending" | null => {
+      const sheetAny = sheet as any;
+      if (phase === "GOAL_SETTING") {
+        return sheetAny && sheetAny.status !== "draft" ? "submitted" : (sheetAny ? "pending" : null);
+      }
+      return empCheckins.some(c => c.quarter_phase === phase) ? "submitted" : (sheetAny ? "pending" : null);
+    };
+
+    result.push({
+      employeeId: emp.id,
+      employeeName: emp.full_name,
+      goalSettingStatus: getStatus("GOAL_SETTING"),
+      q1Status: getStatus("Q1"),
+      q2Status: getStatus("Q2"),
+      q3Status: getStatus("Q3"),
+      q4Status: getStatus("Q4_Annual"),
+    });
+  }
+
+  return result;
+}
+
+export async function submitCheckin(
+  goalId: string,
+  actualAchievement: string,
+  progressStatus: string
+) {
+  const db = await createServerClient();
+
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: currentPhase } = await db.rpc("fn_get_current_phase");
+
+  const { data: existing } = await db
+    .from("goal_checkins")
+    .select("id")
+    .eq("goal_id", goalId)
+    .eq("quarter_phase", currentPhase || "GOAL_SETTING")
+    .single() as { data: any };
+
+  let result: { data: any; error: any };
+
+  if (existing) {
+    result = await (db.from("goal_checkins") as any).update({
+        actual_achievement: actualAchievement,
+        progress_status: progressStatus,
+      })
+      .eq("id", existing.id)
+      .select()
+      .single();
+  } else {
+    result = await db
+      .from("goal_checkins")
+      .insert({
+        goal_id: goalId,
+        quarter_phase: currentPhase || "GOAL_SETTING",
+        actual_achievement: actualAchievement,
+        progress_status: progressStatus,
+      } as any)
+      .select()
+      .single();
+  }
+
+  if (result.error) throw new Error(`Failed to submit check-in: ${result.error.message}`);
+  return result.data;
+}
+
+export async function getGoalCheckins(goalId: string): Promise<GoalCheckin[]> {
+  const db = await createServerClient();
+
+  const result = await (db
+    .from("goal_checkins")
+    .select("*")
+    .eq("goal_id", goalId)
+    .order("quarter_phase"));
+
+  if (result.error) throw new Error(`Failed to fetch check-ins: ${result.error.message}`);
+  return result.data || [];
+}

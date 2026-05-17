@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Profile } from "@/lib/database.types";
 import { logout } from "@/app/login/actions";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import { getCurrentPhase, PhaseInfo } from "@/lib/actions/admin.actions";
 
 const getNavItems = (role?: string) => {
   const items = [
@@ -19,6 +20,7 @@ const getNavItems = (role?: string) => {
     { href: "/dashboard/admin/distribute", label: "Distribute KPI", icon: "share", roles: ["admin", "manager"], parent: "/dashboard/admin" },
     { href: "/dashboard/admin/unlock", label: "Unlock Sheets", icon: "lock_open", roles: ["admin", "manager"], parent: "/dashboard/admin" },
     { href: "/dashboard/admin/thrust-areas", label: "Thrust Areas", icon: "category", roles: ["admin"], parent: "/dashboard/admin" },
+    { href: "/dashboard/admin/phases", label: "Phase Control", icon: "event_note", roles: ["admin"], parent: "/dashboard/admin" },
   ];
   return items.filter(item => item.roles.includes(role || "employee"));
 };
@@ -29,8 +31,10 @@ const FOOTER_ITEMS = [
 ];
 
 /* ─── Desktop Sidebar ─── */
-function Sidebar({ currentUser }: { currentUser: Profile | null }) {
+function Sidebar({ currentUser, phase }: { currentUser: Profile | null; phase: PhaseInfo | null }) {
   const pathname = usePathname();
+
+  const phaseLabel = phase?.phaseLabel || "Goal Setting";
 
   return (
     <nav className="hidden md:flex flex-col h-screen w-64 bg-surface fixed left-0 top-0 border-r-2 border-on-surface z-50">
@@ -41,7 +45,7 @@ function Sidebar({ currentUser }: { currentUser: Profile | null }) {
             Track Progress
           </h1>
           <p className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant">
-            Q4 Cycle Active
+            {phaseLabel} Active
           </p>
         </div>
         {currentUser && <NotificationBell userId={currentUser.id} />}
@@ -176,13 +180,22 @@ function Sidebar({ currentUser }: { currentUser: Profile | null }) {
 /* ─── Mobile Top Bar ─── */
 function MobileTopBar({
   onMenuToggle,
+  phase,
 }: {
   onMenuToggle: () => void;
+  phase: PhaseInfo | null;
 }) {
+  const phaseLabel = phase?.phaseLabel || "Goal Setting";
+  
   return (
     <header className="md:hidden flex justify-between items-center w-full px-margin-mobile py-sm bg-on-surface text-on-primary border-b-2 border-on-surface sticky top-0 z-50">
-      <div className="text-headline-md font-[800] tracking-tighter">
-        GOAL_PORTAL
+      <div className="flex flex-col">
+        <div className="text-headline-md font-[800] tracking-tighter">
+          GOAL_PORTAL
+        </div>
+        <div className="text-label-bold font-[700] text-xs text-on-primary/70">
+          {phaseLabel} Active
+        </div>
       </div>
       <div className="flex gap-sm">
         <button
@@ -201,12 +214,15 @@ function MobileMenu({
   isOpen,
   onClose,
   currentUser,
+  phase,
 }: {
   isOpen: boolean;
   onClose: () => void;
   currentUser: Profile | null;
+  phase: PhaseInfo | null;
 }) {
   const pathname = usePathname();
+  const phaseLabel = phase?.phaseLabel || "Goal Setting";
 
   if (!isOpen) return null;
 
@@ -220,9 +236,14 @@ function MobileMenu({
       {/* Menu Panel */}
       <div className="absolute left-0 top-0 bottom-0 w-72 bg-surface border-r-2 border-on-surface flex flex-col shadow-[8px_0px_0px_0px_#000000]">
         <div className="flex justify-between items-center p-md border-b-2 border-on-surface bg-surface-container-lowest">
-          <span className="text-headline-md font-[800] tracking-tighter text-on-surface">
-            GOAL_PORTAL
-          </span>
+          <div className="flex flex-col">
+            <span className="text-headline-md font-[800] tracking-tighter text-on-surface">
+              GOAL_PORTAL
+            </span>
+            <span className="text-label-bold font-[700] text-xs text-on-surface-variant">
+              {phaseLabel} Active
+            </span>
+          </div>
           <button onClick={onClose} className="p-xs hover:bg-surface-container-high rounded-full transition-colors">
             <span className="material-symbols-outlined text-on-surface">
               close
@@ -335,15 +356,21 @@ export default function DashboardClientShell({
   currentUser: Profile | null;
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [phase, setPhase] = useState<PhaseInfo | null>(null);
+
+  useEffect(() => {
+    getCurrentPhase().then(setPhase).catch(console.error);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      <Sidebar currentUser={currentUser} />
-      <MobileTopBar onMenuToggle={() => setMobileMenuOpen(true)} />
+      <Sidebar currentUser={currentUser} phase={phase} />
+      <MobileTopBar onMenuToggle={() => setMobileMenuOpen(true)} phase={phase} />
       <MobileMenu
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         currentUser={currentUser}
+        phase={phase}
       />
       <main className="flex-1 md:ml-64 p-margin-mobile md:p-margin-desktop min-h-screen bg-background">
         {children}

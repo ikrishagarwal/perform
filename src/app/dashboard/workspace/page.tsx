@@ -7,7 +7,7 @@ import {
   updateSheetStatus,
 } from "@/lib/actions/goal-sheet.actions";
 import { upsertGoals } from "@/lib/actions/goal.actions";
-import { getThrustAreas } from "@/lib/actions/admin.actions";
+import { getThrustAreas, getCurrentPhase, submitCheckin, getGoalCheckins, PhaseInfo, GoalCheckin } from "@/lib/actions/admin.actions";
 import NeoToast from "@/components/feedback/NeoToast";
 import { useToast } from "@/hooks/useToast";
 import type { GoalInsert } from "@/lib/database.types";
@@ -34,6 +34,11 @@ export default function GoalWorkspace() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [thrustAreas, setThrustAreas] = useState<string[]>([]);
+  const [currentPhase, setCurrentPhase] = useState<PhaseInfo | null>(null);
+  const [showCheckinModal, setShowCheckinModal] = useState(false);
+  const [checkins, setCheckins] = useState<Record<string, GoalCheckin[]>>({});
+  const [checkinForm, setCheckinForm] = useState<Record<string, { actual: string; progress: string }>>({});
+  const [submittingCheckin, setSubmittingCheckin] = useState(false);
   const { toast, showSuccess, showError } = useToast();
 
   useEffect(() => {
@@ -45,6 +50,10 @@ export default function GoalWorkspace() {
         } = await supabase.auth.getUser();
 
         if (!user) return;
+
+        // Load current phase
+        const phase = await getCurrentPhase();
+        setCurrentPhase(phase);
 
         // Load thrust areas first
         const areas = await getThrustAreas();
@@ -181,6 +190,17 @@ export default function GoalWorkspace() {
       {/* ─── Goal Rows Section ─── */}
       <section className="flex-1 max-w-[1200px] flex flex-col gap-lg">
         <header className="mb-md">
+          {currentPhase && (
+            <div className="inline-flex items-center gap-sm px-md py-sm border-2 border-primary bg-primary-container mb-md">
+              <span className="material-symbols-outlined text-primary">event_note</span>
+              <span className="text-label-bold font-[700] uppercase text-primary">
+                Current Phase: {currentPhase.phaseLabel}
+              </span>
+              <span className="text-body-sm text-on-surface-variant">
+                ({currentPhase.windowStart} — {currentPhase.windowEnd})
+              </span>
+            </div>
+          )}
           <h1 className="text-headline-lg-mobile md:text-headline-lg font-[800] text-on-surface mb-xs uppercase">
             Goal Workspace
           </h1>
@@ -559,8 +579,114 @@ export default function GoalWorkspace() {
               </button>
             )}
           </div>
+
+          {/* Check-in Button */}
+          <div className="px-lg pb-lg">
+            <button
+              onClick={() => setShowCheckinModal(true)}
+              className="w-full border-2 border-on-surface bg-tertiary text-on-tertiary p-md text-label-bold font-[700] tracking-[0.05em] flex items-center justify-center gap-sm uppercase shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0px_0px_#000000] transition-all"
+            >
+              <span className="material-symbols-outlined">analytics</span>
+              Submit Check-in
+            </button>
+            <p className="text-label-sm text-on-surface-variant text-center mt-xs">
+              Current: {currentPhase?.phaseLabel || "Loading..."}
+            </p>
+          </div>
         </div>
       </aside>
+
+      {/* Check-in Modal */}
+      {showCheckinModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-md">
+          <div className="bg-surface border-2 border-on-surface shadow-[8px_8px_0px_0px_#000000] max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="border-b-2 border-on-surface p-lg bg-primary">
+              <h2 className="text-headline-md font-[800] text-on-primary uppercase">
+                Submit {currentPhase?.phaseLabel} Check-in
+              </h2>
+              <p className="text-body-lg text-on-primary mt-xs">
+                Update progress for each of your goals
+              </p>
+            </div>
+            <div className="p-lg flex flex-col gap-lg">
+              {rows.filter(r => !r.parentGoalId).map((goal) => (
+                <div key={goal.id} className="border-2 border-on-surface p-md">
+                  <div className="flex items-center justify-between mb-md">
+                    <div>
+                      <h3 className="text-label-bold font-[700] text-on-surface uppercase">{goal.title}</h3>
+                      <p className="text-body-sm text-on-surface-variant">{goal.thrustArea} • {goal.target} {goal.unit}</p>
+                    </div>
+                    <span className="px-sm py-xs border border-on-surface bg-surface text-label-bold font-[700] text-xs">
+                      {goal.weightage}%
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-md">
+                    <div className="flex flex-col gap-xs">
+                      <label className="text-label-bold font-[700] uppercase text-xs">Actual Achievement</label>
+                      <input
+                        type="text"
+                        value={checkinForm[goal.id]?.actual || ""}
+                        onChange={(e) => setCheckinForm(prev => ({
+                          ...prev,
+                          [goal.id]: { ...prev[goal.id], actual: e.target.value, progress: prev[goal.id]?.progress || "not_started" }
+                        }))}
+                        placeholder="Enter actual achievement..."
+                        className="border-2 border-on-surface p-sm bg-surface"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-xs">
+                      <label className="text-label-bold font-[700] uppercase text-xs">Progress Status</label>
+                      <select
+                        value={checkinForm[goal.id]?.progress || "not_started"}
+                        onChange={(e) => setCheckinForm(prev => ({
+                          ...prev,
+                          [goal.id]: { ...prev[goal.id], progress: e.target.value }
+                        }))}
+                        className="border-2 border-on-surface p-sm bg-surface"
+                      >
+                        <option value="not_started">Not Started</option>
+                        <option value="on_track">On Track</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-t-2 border-on-surface p-lg flex gap-md justify-end">
+              <button
+                onClick={() => setShowCheckinModal(false)}
+                className="px-lg py-sm border-2 border-on-surface bg-surface text-on-surface text-label-bold font-[700] uppercase"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setSubmittingCheckin(true);
+                  try {
+                    for (const goal of rows.filter(r => !r.parentGoalId)) {
+                      const form = checkinForm[goal.id];
+                      if (form?.actual || form?.progress) {
+                        await submitCheckin(goal.id, form.actual || "", form.progress || "not_started");
+                      }
+                    }
+                    showSuccess("Check-in submitted successfully!");
+                    setShowCheckinModal(false);
+                  } catch (err) {
+                    showError(err instanceof Error ? err.message : "Failed to submit check-in");
+                  } finally {
+                    setSubmittingCheckin(false);
+                  }
+                }}
+                disabled={submittingCheckin}
+                className="px-lg py-sm border-2 border-on-surface bg-primary text-on-primary text-label-bold font-[700] uppercase shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0px_0px_#000000] transition-all disabled:opacity-50"
+              >
+                {submittingCheckin ? "Submitting..." : "Submit Check-in"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

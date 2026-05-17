@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/database.types";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getComplianceMetrics } from "@/lib/actions/admin.actions";
+import { getComplianceMetrics, getCurrentPhase, getPhaseStats } from "@/lib/actions/admin.actions";
 
 export const metadata: Metadata = {
   title: "Admin Hub — PERFORM",
@@ -42,6 +42,15 @@ export default async function AdminHubPage() {
     metrics = await getComplianceMetrics(activeCycle.id);
   }
 
+  const currentPhase = await getCurrentPhase();
+  const phaseStats = await Promise.all([
+    getPhaseStats("GOAL_SETTING"),
+    getPhaseStats("Q1"),
+    getPhaseStats("Q2"),
+    getPhaseStats("Q3"),
+    getPhaseStats("Q4_Annual"),
+  ]);
+
   return (
     <div className="flex flex-col gap-xl max-w-7xl mx-auto w-full">
       <header className="flex flex-col gap-sm">
@@ -78,6 +87,66 @@ export default async function AdminHubPage() {
           </div>
         </div>
       )}
+
+      {/* Phase Summary */}
+      <div className="border-2 border-on-surface bg-surface-container-lowest p-lg">
+        <div className="flex items-center justify-between mb-md">
+          <h2 className="text-headline-md font-[800] text-on-surface">Phase Overview</h2>
+          <Link
+            href="/dashboard/admin/phases"
+            className="px-md py-sm border-2 border-on-surface bg-surface text-on-surface text-label-bold font-[700] uppercase hover:bg-on-surface hover:text-on-primary transition-colors"
+          >
+            Manage Phases
+          </Link>
+        </div>
+        <div className="mb-md px-sm py-xs bg-primary text-on-primary inline-flex items-center gap-sm">
+          <span className="material-symbols-outlined text-lg">event_note</span>
+          <span className="text-label-bold font-[700] uppercase">
+            Current: {currentPhase.phaseLabel}
+          </span>
+          <span className="text-body-sm">
+            ({currentPhase.windowStart} — {currentPhase.windowEnd})
+          </span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-gutter">
+          {[
+            { label: "Goal Setting", stats: phaseStats[0] },
+            { label: "Q1 Check-in", stats: phaseStats[1] },
+            { label: "Q2 Check-in", stats: phaseStats[2] },
+            { label: "Q3 Check-in", stats: phaseStats[3] },
+            { label: "Q4 Annual", stats: phaseStats[4] },
+          ].map((item, idx) => {
+            const percentage = item.stats.totalEmployees > 0
+              ? Math.round((item.stats.submittedCount / item.stats.totalEmployees) * 100)
+              : 0;
+            const isActive = currentPhase.phase === ["GOAL_SETTING", "Q1", "Q2", "Q3", "Q4_Annual"][idx];
+            return (
+              <div
+                key={item.label}
+                className={`border-2 p-md ${isActive ? "bg-primary shadow-[4px_4px_0px_0px_#000000]" : "bg-surface"}`}
+              >
+                <div className="text-label-bold font-[700] uppercase text-xs text-on-surface-variant mb-xs">
+                  {item.label}
+                </div>
+                <div className="text-headline-md font-[800] text-on-surface">
+                  {item.stats.submittedCount}/{item.stats.totalEmployees}
+                </div>
+                <div className="mt-sm">
+                  <div className="h-xs w-full border border-on-surface bg-surface-container-high">
+                    <div
+                      className="h-full bg-on-surface transition-all"
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                  <div className="text-label-bold font-[700] uppercase text-xs mt-xs text-on-surface-variant">
+                    {percentage}%
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
         <Link
