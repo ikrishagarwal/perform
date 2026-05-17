@@ -20,6 +20,7 @@ interface GoalRow {
   unit: string;
   target: string;
   weightage: number;
+  parentGoalId?: string | null;
 }
 
 const THRUST_AREAS = [
@@ -65,6 +66,7 @@ export default function GoalWorkspace() {
               unit: g.uom,
               target: g.target_value,
               weightage: g.weightage,
+              parentGoalId: g.parent_goal_id,
             })),
           );
         } else {
@@ -194,16 +196,20 @@ export default function GoalWorkspace() {
             <div className="3xl:grid 3xl:grid-cols-12 flex flex-col">
               {/* Title */}
               <div className="3xl:col-span-3 border-b-2 3xl:border-b-0 3xl:border-r border-on-surface p-md flex flex-col">
-                <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase mb-sm text-[10px]">
+                <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase mb-sm text-[10px] flex items-center gap-xs">
                   Title
+                  {row.parentGoalId && (
+                    <span className="text-[10px] bg-primary text-on-primary px-xs py-px rounded uppercase tracking-wider">Shared KPI</span>
+                  )}
                 </label>
                 <input
                   type="text"
                   value={row.title}
                   onChange={(e) =>
-                    updateRow(row.id, "title", e.target.value)
+                    !row.parentGoalId && updateRow(row.id, "title", e.target.value)
                   }
-                  className="w-full flex-1 min-h-[48px] bg-transparent border border-on-surface text-body-md font-[700] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm rounded-none placeholder:text-on-surface-variant"
+                  disabled={!!row.parentGoalId}
+                  className={`w-full flex-1 min-h-[48px] bg-transparent border text-body-md font-[700] focus:ring-0 focus:border-2 focus:border-primary p-sm rounded-none placeholder:text-on-surface-variant ${row.parentGoalId ? 'border-dashed border-on-surface-variant text-on-surface-variant cursor-not-allowed' : 'border-on-surface text-on-surface'}`}
                   placeholder="Goal title..."
                 />
               </div>
@@ -256,8 +262,9 @@ export default function GoalWorkspace() {
                   <div className="relative flex-1">
                     <select
                       value={row.unit}
-                      onChange={(e) => updateRow(row.id, "unit", e.target.value)}
-                      className="w-full h-full min-h-[48px] bg-transparent border border-on-surface text-label-bold font-[700] tracking-[0.05em] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm appearance-none rounded-none cursor-pointer"
+                      onChange={(e) => !row.parentGoalId && updateRow(row.id, "unit", e.target.value)}
+                      disabled={!!row.parentGoalId}
+                      className={`w-full h-full min-h-[48px] bg-transparent border text-label-bold font-[700] tracking-[0.05em] focus:ring-0 focus:border-2 focus:border-primary p-sm appearance-none rounded-none ${row.parentGoalId ? 'border-dashed border-on-surface-variant text-on-surface-variant cursor-not-allowed' : 'border-on-surface text-on-surface'}`}
                     >
                       <optgroup label="Min (Higher is Better)">
                         <option value="numeric_min">Numeric (Min)</option>
@@ -284,9 +291,10 @@ export default function GoalWorkspace() {
                     type="number"
                     value={row.target}
                     onChange={(e) =>
-                      updateRow(row.id, "target", e.target.value)
+                      !row.parentGoalId && updateRow(row.id, "target", e.target.value)
                     }
-                    className="w-full flex-1 bg-transparent border border-on-surface text-headline-md font-[700] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm text-center rounded-none"
+                    disabled={!!row.parentGoalId}
+                    className={`w-full flex-1 bg-transparent border text-headline-md font-[700] focus:ring-0 focus:border-2 focus:border-primary p-sm text-center rounded-none ${row.parentGoalId ? 'border-dashed border-on-surface-variant text-on-surface-variant cursor-not-allowed' : 'border-on-surface text-on-surface'}`}
                   />
                 </div>
                 {/* Weight */}
@@ -349,8 +357,9 @@ export default function GoalWorkspace() {
                   <div className="relative flex-1">
                     <select
                       value={row.unit}
-                      onChange={(e) => updateRow(row.id, "unit", e.target.value)}
-                      className="w-full h-full min-h-[48px] bg-transparent border border-on-surface text-label-bold font-[700] tracking-[0.05em] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm appearance-none rounded-none cursor-pointer"
+                      onChange={(e) => !row.parentGoalId && updateRow(row.id, "unit", e.target.value)}
+                      disabled={!!row.parentGoalId}
+                      className={`w-full h-full min-h-[48px] bg-transparent border text-label-bold font-[700] tracking-[0.05em] focus:ring-0 focus:border-2 focus:border-primary p-sm appearance-none rounded-none ${row.parentGoalId ? 'border-dashed border-on-surface-variant text-on-surface-variant cursor-not-allowed' : 'border-on-surface text-on-surface'}`}
                     >
                       <optgroup label="Min">
                         <option value="numeric_min">Num</option>
@@ -377,9 +386,10 @@ export default function GoalWorkspace() {
                     type="number"
                     value={row.target}
                     onChange={(e) =>
-                      updateRow(row.id, "target", e.target.value)
+                      !row.parentGoalId && updateRow(row.id, "target", e.target.value)
                     }
-                    className="w-full flex-1 bg-transparent border border-on-surface text-headline-md font-[700] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm text-center rounded-none"
+                    disabled={!!row.parentGoalId}
+                    className={`w-full flex-1 bg-transparent border text-headline-md font-[700] focus:ring-0 focus:border-2 focus:border-primary p-sm text-center rounded-none ${row.parentGoalId ? 'border-dashed border-on-surface-variant text-on-surface-variant cursor-not-allowed' : 'border-on-surface text-on-surface'}`}
                   />
                 </div>
                 {/* Weight */}

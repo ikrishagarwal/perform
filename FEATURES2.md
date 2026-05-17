@@ -18,6 +18,7 @@
 | **7.2**    | SLA-Driven Escalation Engine             | ❌ **NOT STARTED** | Cron job and escalation logic pending.                                                                     |
 | **8.1**    | High-Density Business Intelligence      | ❌ **NOT STARTED** | Visualization library integration + treemap/bar/pie charts pending.                                       |
 | **8.2**    | Interactive Departmental Drilldowns     | ❌ **NOT STARTED** | Hierarchical state machine for drilldown filters pending.                                                   |
+| **9.1**    | Shared Goals / KPI Distribution          | ✅ **100% DONE** | Admin/manager can push KPIs to employees; recipients can only adjust weightage; achievement syncs via DB trigger. |
 
 ---
 
@@ -106,3 +107,27 @@
 - **Technical Requirements**:
   - Construct a hierarchical state machine managing grid query filters.
   - Wire interactivity directly into the charts; clicking a specific data point must dynamically re-fetch metrics, appending localized organizational parameters without full page reloads.
+
+---
+
+## 🎯 EPIC 9: Shared Goals & KPI Distribution
+
+### Feature 9.1: Shared Goals / KPI Distribution
+
+- **Status**: ✅ **100% IMPLEMENTED**
+- **Functional Description**: Allows admins and managers to push departmental KPIs to multiple employees. Recipients can only adjust weightage; Goal Title and Target are read-only. Achievement updates by the primary owner sync across all linked goal sheets via database trigger.
+- **Technical Requirements**:
+  - ✅ Admin/manager can access "Distribute Shared KPI" modal in Admin Hub page.
+  - ✅ Managers can only distribute to their direct reports (filtered by `manager_id`).
+  - ✅ Admins can distribute to all employees.
+  - ✅ Recipients see shared goals with Title and Target fields read-only (disabled inputs with dashed border).
+  - ✅ Recipients can only modify Weightage (and Unit in UI for consistency).
+  - ✅ Visual "Shared KPI" badge displayed next to goal Title.
+  - ✅ Database trigger `fn_cascade_shared_goals()` syncs `actual_achievement` and `progress_status` from parent goal to all children when parent is updated.
+- **Implementation Files**:
+  - `src/lib/actions/admin.actions.ts` — Added `getDirectReports(managerId)` action.
+  - `src/lib/actions/goal.actions.ts` — `distributeSharedGoal()` creates parent + child goals with `parent_goal_id` linkage.
+  - `src/app/dashboard/admin/page.tsx` — Updated role check to allow managers (role check: `admin` OR `manager`).
+  - `src/app/dashboard/admin/AdminActionsPanel.tsx` — Added `userId` and `userRole` props; uses `getDirectReports()` for managers, `getAllProfiles()` for admins.
+  - `src/app/dashboard/workspace/page.tsx` — Added `parentGoalId` to GoalRow; disabled Title/Target/Unit inputs when `parentGoalId` is set; added "Shared KPI" badge.
+  - `supabase/migrations/00001_initial_schema.sql` — DB trigger `fn_cascade_shared_goals()` already handles sync.

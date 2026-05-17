@@ -95,6 +95,21 @@ export async function getAllProfiles(): Promise<Profile[]> {
   return data ?? [];
 }
 
+// ─── Get direct reports (manager view) ──────────────────────
+export async function getDirectReports(managerId: string): Promise<Profile[]> {
+  const db = await createServerClient();
+
+  const { data, error } = await db
+    .from("profiles")
+    .select("*")
+    .eq("manager_id", managerId)
+    .eq("role", "employee")
+    .order("full_name", { ascending: true });
+
+  if (error) throw new Error(`Failed to fetch direct reports: ${error.message}`);
+  return data ?? [];
+}
+
 // ─── CSV Export: aggregate goals + actuals for download ─────
 export async function exportGoalDataCsv(cycleId: string): Promise<string> {
   const db = await createServerClient();

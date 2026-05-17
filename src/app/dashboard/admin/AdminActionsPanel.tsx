@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { adminUnlockSheet, getComplianceMetrics, getAuditLogs, getAllProfiles } from "@/lib/actions/admin.actions";
+import { adminUnlockSheet, getComplianceMetrics, getAuditLogs, getAllProfiles, getDirectReports } from "@/lib/actions/admin.actions";
 import { distributeSharedGoal } from "@/lib/actions/goal.actions";
 import { getOrCreateMySheet } from "@/lib/actions/goal-sheet.actions";
 import NeoToast from "@/components/feedback/NeoToast";
@@ -25,8 +25,12 @@ interface Metrics {
 
 export default function AdminActionsPanel({
   activeCycleId,
+  userId,
+  userRole,
 }: {
   activeCycleId: string | null;
+  userId: string;
+  userRole: string;
 }) {
   const [sheetId, setSheetId] = useState("");
   const [modalType, setModalType] = useState<ModalType>(null);
@@ -53,7 +57,11 @@ export default function AdminActionsPanel({
       getAuditLogs({ limit: 20 }).then(setAuditLogs).catch(console.error);
     }
     if (type === "distribute") {
-      getAllProfiles().then(setProfiles).catch(console.error);
+      if (userRole === "manager") {
+        getDirectReports(userId).then(setProfiles).catch(console.error);
+      } else {
+        getAllProfiles().then(setProfiles).catch(console.error);
+      }
     }
     setModalType(type);
   };

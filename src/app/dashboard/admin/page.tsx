@@ -25,7 +25,7 @@ export default async function AdminHubPage() {
 
   const userRole = profile ? (profile as Profile).role : null;
 
-  if (userRole !== "admin") {
+  if (userRole !== "admin" && userRole !== "manager") {
     redirect("/dashboard");
   }
 
@@ -49,7 +49,11 @@ export default async function AdminHubPage() {
         </p>
       </header>
 
-      <AdminActionsPanel activeCycleId={activeCycle?.id ?? null} />
+      <AdminActionsPanel 
+        activeCycleId={activeCycle?.id ?? null} 
+        userId={user.id}
+        userRole={userRole}
+      />
     </div>
   );
 }
