@@ -125,7 +125,7 @@ function Sidebar({ currentUser }: { currentUser: Profile | null }) {
         </div>
         <div className="flex flex-col overflow-hidden">
           <span className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase truncate">
-            {currentUser?.full_name || "Unknown User"}
+            {currentUser?.full_name?.trim() || "User"}
           </span>
           <span className="text-label-sm font-[500] tracking-[0.02em] text-on-surface-variant truncate">
             {currentUser?.role || "employee"}

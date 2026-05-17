@@ -1,7 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
 import DashboardClientShell from "./DashboardClientShell";
-import PersonaBar from "@/components/PersonaBar";
-import { AppRole } from "@/lib/database.types";
 
 export default async function DashboardLayout({
   children,
@@ -11,15 +9,26 @@ export default async function DashboardLayout({
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   
+  console.log("DashboardLayout: user id =", user?.id);
+  
   let currentUser = null;
   if (user) {
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
-    currentUser = profile;
+    
+    console.log("DashboardLayout: profile fetch result:", { profile, error });
+    
+    if (error) {
+      console.error("Error fetching profile:", error);
+    } else if (profile) {
+      currentUser = profile;
+    }
   }
+
+  console.log("DashboardLayout: currentUser =", currentUser);
 
   return (
     <DashboardClientShell currentUser={currentUser}>

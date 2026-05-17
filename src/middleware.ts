@@ -34,7 +34,19 @@ export async function middleware(request: NextRequest) {
 
   // refreshing the auth token
   const { data: { user } } = await supabase.auth.getUser();
-  const role = user?.user_metadata?.role || "employee";
+  
+  // Get role from database, not user_metadata
+  let role = "employee";
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile) {
+      role = profile.role || "employee";
+    }
+  }
 
   // Route protection logic
   const pathname = request.nextUrl.pathname;

@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { adminUnlockSheet, getComplianceMetrics, getAuditLogs, getAllProfiles, getDirectReports } from "@/lib/actions/admin.actions";
+import { adminUnlockSheet, getComplianceMetrics, getAuditLogs, getAllProfiles, getDirectReports, createEmployee, updateEmployee, toggleEmployeeActive, getAllManagers } from "@/lib/actions/admin.actions";
 import { distributeSharedGoal } from "@/lib/actions/goal.actions";
 import { getOrCreateMySheet } from "@/lib/actions/goal-sheet.actions";
 import NeoToast from "@/components/feedback/NeoToast";
 import { useToast } from "@/hooks/useToast";
 import { AuditLog, Profile, GoalInsert } from "@/lib/database.types";
 
-type ModalType = "unlock" | "export" | "audit" | "distribute" | null;
+type ModalType = "unlock" | "export" | "audit" | "distribute" | "employees" | "employeeForm" | null;
 
 interface Metrics {
   totalEmployees: number;
@@ -43,6 +43,17 @@ export default function AdminActionsPanel({
     uom: "numeric_max",
     weightage: 10,
   });
+  const [employees, setEmployees] = useState<Profile[]>([]);
+  const [managers, setManagers] = useState<Profile[]>([]);
+  const [editingEmployee, setEditingEmployee] = useState<Profile | null>(null);
+  const [employeeForm, setEmployeeForm] = useState({
+    full_name: "",
+    email: "",
+    password: "",
+    role: "employee" as "employee" | "manager" | "admin",
+    manager_id: "",
+    title: "",
+  });
   const [isPending, startTransition] = useTransition();
   const { toast, showSuccess, showError } = useToast();
 
@@ -52,7 +63,7 @@ export default function AdminActionsPanel({
     }
   }, [activeCycleId]);
 
-  const openModal = (type: ModalType) => {
+  const openModal = async (type: ModalType) => {
     if (type === "audit") {
       getAuditLogs({ limit: 20 }).then(setAuditLogs).catch(console.error);
     }
@@ -61,6 +72,18 @@ export default function AdminActionsPanel({
         getDirectReports(userId).then(setProfiles).catch(console.error);
       } else {
         getAllProfiles().then(setProfiles).catch(console.error);
+      }
+    }
+    if (type === "employees") {
+      try {
+        const [emps, mgrs] = await Promise.all([
+          getAllProfiles(),
+          getAllManagers(),
+        ]);
+        setEmployees(emps);
+        setManagers(mgrs);
+      } catch (err) {
+        showError("Failed to load employees");
       }
     }
     setModalType(type);
@@ -136,6 +159,90 @@ export default function AdminActionsPanel({
     });
   };
 
+  const openEmployeeForm = (employee?: Profile) => {
+    if (employee) {
+      setEditingEmployee(employee);
+      setEmployeeForm({
+        full_name: employee.full_name,
+        email: "",
+        password: "",
+        role: employee.role,
+        manager_id: employee.manager_id || "",
+        title: employee.title,
+      });
+    } else {
+      setEditingEmployee(null);
+      setEmployeeForm({
+        full_name: "",
+        email: "",
+        password: "",
+        role: "employee",
+        manager_id: "",
+        title: "",
+      });
+    }
+    setModalType("employeeForm");
+  };
+
+  const confirmEmployeeForm = () => {
+    if (!employeeForm.full_name || !employeeForm.role) {
+      showError("Name and role are required.");
+      return;
+    }
+    if (!editingEmployee && (!employeeForm.email || !employeeForm.password || employeeForm.password.length < 6)) {
+      showError("Email and password (min 6 chars) are required for new employees.");
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        if (editingEmployee) {
+          const updateData: {
+            full_name: string;
+            role: "employee" | "manager" | "admin";
+            manager_id?: string;
+            title: string;
+          } = {
+            full_name: employeeForm.full_name,
+            role: employeeForm.role,
+            title: employeeForm.title,
+          };
+          if (employeeForm.role === "employee" && employeeForm.manager_id) {
+            updateData.manager_id = employeeForm.manager_id;
+          }
+          await updateEmployee(editingEmployee.id, updateData);
+          showSuccess("Employee updated successfully.");
+        } else {
+          await createEmployee({
+            full_name: employeeForm.full_name,
+            email: employeeForm.email,
+            password: employeeForm.password,
+            role: employeeForm.role,
+            manager_id: employeeForm.role === "employee" ? employeeForm.manager_id : undefined,
+            title: employeeForm.title,
+          });
+          showSuccess("Employee created successfully.");
+        }
+        closeModal();
+        openModal("employees");
+      } catch (err) {
+        showError(err instanceof Error ? err.message : "Operation failed");
+      }
+    });
+  };
+
+  const toggleEmployeeStatus = (employeeId: string, isActive: boolean) => {
+    startTransition(async () => {
+      try {
+        await toggleEmployeeActive(employeeId, isActive);
+        showSuccess(`Employee ${isActive ? "activated" : "deactivated"} successfully.`);
+        openModal("employees");
+      } catch (err) {
+        showError(err instanceof Error ? err.message : "Operation failed");
+      }
+    });
+  };
+
   return (
     <div className="flex flex-col gap-gutter">
       <NeoToast toast={toast} />
@@ -204,6 +311,15 @@ export default function AdminActionsPanel({
             >
               Distribute Shared KPI
             </button>
+            {userRole === "admin" && (
+              <button
+                type="button"
+                onClick={() => openModal("employees")}
+                className="w-full mt-sm px-md py-sm border border-on-surface bg-secondary text-on-secondary text-label-bold font-[700] tracking-[0.05em] hover:shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-px transition-all"
+              >
+                Manage Employees
+              </button>
+            )}
           </div>
         </div>
 
@@ -442,6 +558,189 @@ export default function AdminActionsPanel({
                   <div className="text-center py-xl text-on-surface-variant italic">No audit logs found.</div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalType === "employees" && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-md">
+          <div className="absolute inset-0 bg-on-surface/60" onClick={closeModal} />
+          <div className="relative w-[min(92vw,70rem)] max-h-[90vh] flex flex-col border-2 border-on-surface bg-surface-container-lowest shadow-[8px_8px_0px_0px_#000000]">
+            <div className="p-lg border-b-2 border-on-surface bg-surface flex justify-between items-center">
+              <h4 className="text-headline-md font-[800]">Manage Employees</h4>
+              <button onClick={closeModal} className="material-symbols-outlined">close</button>
+            </div>
+            <div className="p-lg">
+              <button
+                onClick={() => openEmployeeForm()}
+                className="mb-md px-md py-sm border-2 border-on-surface bg-primary text-on-primary text-label-bold font-[700] hover:shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-px transition-all"
+              >
+                + Add Employee
+              </button>
+              <div className="overflow-x-auto border-2 border-on-surface">
+                <table className="w-full text-left">
+                  <thead className="bg-surface border-b-2 border-on-surface">
+                    <tr>
+                      <th className="p-sm text-label-bold font-[700] uppercase border-r border-on-surface">Name</th>
+                      <th className="p-sm text-label-bold font-[700] uppercase border-r border-on-surface">Role</th>
+                      <th className="p-sm text-label-bold font-[700] uppercase border-r border-on-surface">Manager</th>
+                      <th className="p-sm text-label-bold font-[700] uppercase border-r border-on-surface">Title</th>
+                      <th className="p-sm text-label-bold font-[700] uppercase border-r border-on-surface">Status</th>
+                      <th className="p-sm text-label-bold font-[700] uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {employees.map((emp) => {
+                      const manager = managers.find(m => m.id === emp.manager_id);
+                      return (
+                        <tr key={emp.id} className="border-b border-on-surface hover:bg-surface-container">
+                          <td className="p-sm border-r border-on-surface text-label-bold font-[700]">{emp.full_name}</td>
+                          <td className="p-sm border-r border-on-surface">
+                            <span className={`px-sm py-xs text-label-sm font-[700] uppercase ${
+                              emp.role === "admin" ? "bg-error text-on-error" :
+                              emp.role === "manager" ? "bg-tertiary text-on-tertiary" :
+                              "bg-primary-container text-on-primary-container"
+                            }`}>
+                              {emp.role}
+                            </span>
+                          </td>
+                          <td className="p-sm border-r border-on-surface text-label-sm">{manager?.full_name || "-"}</td>
+                          <td className="p-sm border-r border-on-surface text-label-sm">{emp.title || "-"}</td>
+                          <td className="p-sm border-r border-on-surface">
+                            <span className={`px-sm py-xs text-label-sm font-[700] uppercase ${
+                              emp.is_active ? "bg-tertiary text-on-tertiary" : "bg-surface-variant text-on-surface-variant"
+                            }`}>
+                              {emp.is_active ? "Active" : "Inactive"}
+                            </span>
+                          </td>
+                          <td className="p-sm">
+                            <div className="flex gap-xs">
+                              <button
+                                onClick={() => openEmployeeForm(emp)}
+                                className="px-sm py-xs border border-on-surface bg-surface text-on-surface text-label-sm font-[700] hover:shadow-[2px_2px_0px_0px_#000000] transition-all"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => toggleEmployeeStatus(emp.id, !emp.is_active)}
+                                className={`px-sm py-xs border text-label-sm font-[700] transition-all ${
+                                  emp.is_active
+                                    ? "border-error bg-surface text-error hover:shadow-[2px_2px_0px_0px_#000000]"
+                                    : "border-tertiary bg-tertiary text-on-tertiary hover:shadow-[2px_2px_0px_0px_#000000]"
+                                }`}
+                              >
+                                {emp.is_active ? "Deactivate" : "Activate"}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {employees.length === 0 && (
+                  <div className="p-xl text-center text-on-surface-variant italic">No employees found.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalType === "employeeForm" && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-md">
+          <div className="absolute inset-0 bg-on-surface/60" onClick={closeModal} />
+          <div className="relative w-[min(92vw,40rem)] border-2 border-on-surface bg-surface-container-lowest shadow-[8px_8px_0px_0px_#000000] p-lg">
+            <h4 className="text-headline-md font-[800] mb-lg border-b-2 border-on-surface pb-sm">
+              {editingEmployee ? "Edit Employee" : "Add Employee"}
+            </h4>
+            <div className="space-y-md">
+              <div className="flex flex-col gap-xs">
+                <label className="text-label-bold font-[700] uppercase text-xs">Full Name</label>
+                <input
+                  value={employeeForm.full_name}
+                  onChange={(e) => setEmployeeForm({...employeeForm, full_name: e.target.value})}
+                  className="border-2 border-on-surface p-sm bg-surface text-body-lg"
+                  placeholder="John Doe"
+                />
+              </div>
+              {!editingEmployee && (
+                <>
+                  <div className="flex flex-col gap-xs">
+                    <label className="text-label-bold font-[700] uppercase text-xs">Email</label>
+                    <input
+                      type="email"
+                      value={employeeForm.email}
+                      onChange={(e) => setEmployeeForm({...employeeForm, email: e.target.value})}
+                      className="border-2 border-on-surface p-sm bg-surface text-body-lg"
+                      placeholder="john@company.com"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-xs">
+                    <label className="text-label-bold font-[700] uppercase text-xs">Password</label>
+                    <input
+                      type="password"
+                      minLength={6}
+                      value={employeeForm.password}
+                      onChange={(e) => setEmployeeForm({...employeeForm, password: e.target.value})}
+                      className="border-2 border-on-surface p-sm bg-surface text-body-lg"
+                      placeholder="Min 6 characters"
+                    />
+                  </div>
+                </>
+              )}
+              <div className="flex flex-col gap-xs">
+                <label className="text-label-bold font-[700] uppercase text-xs">Role</label>
+                <select
+                  value={employeeForm.role}
+                  onChange={(e) => setEmployeeForm({...employeeForm, role: e.target.value as "employee" | "manager" | "admin"})}
+                  className="border-2 border-on-surface p-sm bg-surface text-body-lg appearance-none cursor-pointer"
+                >
+                  <option value="employee">Employee</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
+              {employeeForm.role === "employee" && (
+                <div className="flex flex-col gap-xs">
+                  <label className="text-label-bold font-[700] uppercase text-xs">Manager</label>
+                  <select
+                    value={employeeForm.manager_id}
+                    onChange={(e) => setEmployeeForm({...employeeForm, manager_id: e.target.value})}
+                    className="border-2 border-on-surface p-sm bg-surface text-body-lg appearance-none cursor-pointer"
+                  >
+                    <option value="">Select Manager</option>
+                    {managers.map(m => (
+                      <option key={m.id} value={m.id}>{m.full_name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="flex flex-col gap-xs">
+                <label className="text-label-bold font-[700] uppercase text-xs">Title</label>
+                <input
+                  value={employeeForm.title}
+                  onChange={(e) => setEmployeeForm({...employeeForm, title: e.target.value})}
+                  className="border-2 border-on-surface p-sm bg-surface text-body-lg"
+                  placeholder="e.g. Software Engineer"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-sm mt-lg pt-lg border-t-2 border-on-surface">
+              <button
+                onClick={closeModal}
+                className="px-md py-sm border-2 border-on-surface bg-surface text-on-surface text-label-bold font-[700]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEmployeeForm}
+                disabled={isPending}
+                className="px-md py-sm border-2 border-on-surface bg-primary text-on-primary text-label-bold font-[700] disabled:opacity-50"
+              >
+                {isPending ? "Saving..." : editingEmployee ? "Update" : "Create"}
+              </button>
             </div>
           </div>
         </div>

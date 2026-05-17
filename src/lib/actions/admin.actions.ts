@@ -6,6 +6,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { createServerClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { PostgrestSingleResponse } from "@supabase/supabase-js";
 import type {
   AuditLog,
@@ -225,4 +226,108 @@ export async function getComplianceMetrics(cycleId: string) {
     approvalRate: total > 0 ? Math.round((approved / total) * 100) : 0,
     thrustAreaBreakdown: thrustAreaCounts,
   };
+}
+
+// ─── Employee Management ───────────────────────────────────────
+
+export interface CreateEmployeeInput {
+  email: string;
+  password: string;
+  full_name: string;
+  role: "employee" | "manager" | "admin";
+  manager_id?: string;
+  title?: string;
+}
+
+export async function createEmployee(input: CreateEmployeeInput) {
+  const adminDb = createAdminClient();
+
+  const { data: authUser, error: authError } = await adminDb.auth.admin.createUser({
+    email: input.email,
+    password: input.password,
+    email_confirm: true,
+    user_metadata: {
+      full_name: input.full_name,
+      role: input.role,
+    },
+  });
+
+  if (authError) {
+    throw new Error(`Failed to create auth user: ${authError.message}`);
+  }
+
+  if (!authUser.user) {
+    throw new Error("Failed to create auth user: no user returned");
+  }
+
+  const { error: profileError } = await adminDb.from("profiles").insert({
+    id: authUser.user.id,
+    full_name: input.full_name,
+    role: input.role,
+    manager_id: input.manager_id || null,
+    title: input.title || "",
+    is_active: true,
+  });
+
+  if (profileError) {
+    await adminDb.auth.admin.deleteUser(authUser.user.id);
+    throw new Error(`Failed to create profile: ${profileError.message}`);
+  }
+
+  return { id: authUser.user.id, ...input };
+}
+
+export async function updateEmployee(
+  id: string,
+  input: Partial<Omit<CreateEmployeeInput, "email" | "password" | "email_confirm" | "user_metadata">>
+) {
+  const db = await createServerClient();
+
+  const updateData: Record<string, unknown> = {};
+  if (input.full_name !== undefined) updateData.full_name = input.full_name;
+  if (input.role !== undefined) updateData.role = input.role;
+  if (input.manager_id !== undefined) updateData.manager_id = input.manager_id || null;
+  if (input.title !== undefined) updateData.title = input.title;
+
+  const { data, error } = await db
+    .from("profiles")
+    .update(updateData)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to update employee: ${error.message}`);
+  return data;
+}
+
+export async function toggleEmployeeActive(id: string, isActive: boolean) {
+  const db = await createServerClient();
+
+  const { data, error } = await db
+    .from("profiles")
+    .update({ is_active: isActive })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to ${isActive ? "activate" : "deactivate"} employee: ${error.message}`);
+  return data;
+}
+
+export async function deleteEmployee(id: string) {
+  return toggleEmployeeActive(id, false);
+}
+
+export async function getAllManagers(): Promise<Profile[]> {
+  const db = await createServerClient();
+
+  const { data, error } = await db
+    .from("profiles")
+    .select("*")
+    .in("role", ["manager", "admin"])
+    .eq("is_active", true)
+    .order("full_name", { ascending: true });
+
+  if (error) throw new Error(`Failed to fetch managers: ${error.message}`);
+  return data ?? [];
 }

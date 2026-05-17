@@ -13,45 +13,32 @@ export async function login(formData: FormData) {
 
   const supabase = await createServerClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: sessionData, error: authError } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  if (error) {
-    return { error: error.message };
+  if (authError) {
+    return { error: authError.message };
   }
 
-  return { success: true };
-}
+  if (sessionData?.user) {
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_active")
+        .eq("id", sessionData.user.id)
+        .single();
 
-export async function signup(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const fullName = formData.get("fullName") as string;
-  const role = formData.get("role") as string;
-
-  if (!email || !password || !fullName || !role) {
-    return { error: "All fields are required for signup." };
-  }
-
-  const supabase = await createServerClient();
-
-  // Since we disabled email confirmations, this will log them in immediately
-  // and trigger the database trigger `tg_on_auth_user_created` to create their profile.
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-        role: role,
-      },
-    },
-  });
-
-  if (error) {
-    return { error: error.message };
+      if (profile && typeof profile.is_active === 'boolean' && !profile.is_active) {
+        await supabase.auth.signOut();
+        return { error: "Account disabled. Contact administrator." };
+      }
+    } catch (err) {
+      // Ignore errors - either column doesn't exist or other issue
+      // Allow login to proceed
+      console.log("Profile check skipped:", err);
+    }
   }
 
   return { success: true };

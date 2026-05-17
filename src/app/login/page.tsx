@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login, signup } from "./actions";
+import { login } from "./actions";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -18,12 +17,7 @@ export default function LoginPage() {
     const formData = new FormData(e.currentTarget);
     
     try {
-      let res;
-      if (isLogin) {
-        res = await login(formData);
-      } else {
-        res = await signup(formData);
-      }
+      const res = await login(formData);
 
       if (res?.error) {
         setError(res.error);
@@ -46,7 +40,7 @@ export default function LoginPage() {
             GOAL_PORTAL
           </h1>
           <p className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant uppercase">
-            {isLogin ? "Authorized Personnel Only" : "Create New Identity"}
+            Authorized Personnel Only
           </p>
         </div>
 
@@ -58,36 +52,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {!isLogin && (
-            <>
-              <div className="flex flex-col gap-xs">
-                <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  name="fullName"
-                  required
-                  className="w-full bg-surface-container-high border-2 border-on-surface p-sm text-body-lg font-[500] text-on-surface focus:outline-none focus:border-primary focus:bg-primary-fixed transition-colors"
-                  placeholder="Jane Doe"
-                />
-              </div>
-              <div className="flex flex-col gap-xs">
-                <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase">
-                  Role Request
-                </label>
-                <select
-                  name="role"
-                  required
-                  className="w-full bg-surface-container-high border-2 border-on-surface p-sm text-body-lg font-[500] text-on-surface focus:outline-none focus:border-primary focus:bg-primary-fixed transition-colors appearance-none cursor-pointer"
-                >
-                  <option value="employee">Employee</option>
-                  <option value="manager">Manager</option>
-                  <option value="admin">Administrator</option>
-                </select>
-              </div>
-            </>
-          )}
+          
 
           <div className="flex flex-col gap-xs">
             <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase">
@@ -124,28 +89,12 @@ export default function LoginPage() {
                 : "bg-primary text-on-primary shadow-[4px_4px_0px_0px_#1b1b1b] -translate-y-1 hover:-translate-y-2 hover:shadow-[6px_6px_0px_0px_#1b1b1b] cursor-pointer"
             }`}
           >
-            <span className="material-symbols-outlined">
-              {isLogin ? "login" : "person_add"}
-            </span>
-            {loading ? "Processing..." : isLogin ? "Authenticate" : "Register"}
+            <span className="material-symbols-outlined">login</span>
+            {loading ? "Processing..." : "Authenticate"}
           </button>
         </form>
 
-        {/* Footer Toggle */}
-        <div className="p-md border-t-2 border-on-surface bg-surface-container-low text-center">
-          <button
-            type="button"
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setError(null);
-            }}
-            className="text-label-sm font-[700] tracking-[0.05em] text-on-surface hover:text-primary transition-colors hover:underline decoration-2 underline-offset-4 uppercase"
-          >
-            {isLogin
-              ? "Need an identity? Request registration."
-              : "Already have clearance? Authenticate here."}
-          </button>
-        </div>
+        
       </div>
     </div>
   );
