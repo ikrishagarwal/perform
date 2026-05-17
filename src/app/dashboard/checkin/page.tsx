@@ -10,13 +10,21 @@ import { updateGoalActuals } from "@/lib/actions/goal.actions";
 import NeoToast from "@/components/feedback/NeoToast";
 import { useToast } from "@/hooks/useToast";
 import type { Goal } from "@/lib/database.types";
+import EvidenceUploader from "@/components/evidence/EvidenceUploader";
+import EvidenceViewer from "@/components/evidence/EvidenceViewer";
 
 export default function PerformanceCheckin() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [actuals, setActuals] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sheetId, setSheetId] = useState<string>("");
+  const [expandedEvidence, setExpandedEvidence] = useState<Record<string, boolean>>({});
   const { toast, showSuccess, showError } = useToast();
+
+  const toggleEvidence = (goalId: string) => {
+    setExpandedEvidence((prev) => ({ ...prev, [goalId]: !prev[goalId] }));
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -31,6 +39,7 @@ export default function PerformanceCheckin() {
         const sheet = await getOrCreateMySheet(user.id);
         const fullSheet = await getGoalSheet(sheet.id);
 
+        setSheetId(fullSheet.id);
         setGoals(fullSheet.goals);
 
         const init: Record<string, string> = {};
@@ -362,6 +371,33 @@ export default function PerformanceCheckin() {
                       style={{ width: `${progress}%` }}
                     />
                   </div>
+                </div>
+
+                {/* Evidence Section */}
+                <div className="border-t border-on-surface-variant pt-md mt-md">
+                  <button
+                    type="button"
+                    onClick={() => toggleEvidence(goal.id)}
+                    className="flex items-center gap-sm text-label-md font-[500] text-on-surface-variant hover:text-on-surface transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">
+                      {expandedEvidence[goal.id] ? "expand_less" : "expand_more"}
+                    </span>
+                    Attach Evidence
+                    {(goal.evidence_url as any[])?.length > 0 && (
+                      <span className="px-xs py-xs bg-primary/20 text-primary text-label-xs font-[700] rounded">
+                        {(goal.evidence_url as any[]).length}
+                      </span>
+                    )}
+                  </button>
+                  {expandedEvidence[goal.id] && (
+                    <div className="mt-md">
+                      <EvidenceUploader
+                        goalId={goal.id}
+                        sheetId={goal.goal_sheet_id}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             );

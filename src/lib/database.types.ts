@@ -53,6 +53,15 @@ export interface GoalSheet {
   updated_at: string;
 }
 
+export interface GoalEvidence {
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  uploaded_at: string;
+}
+
 export interface Goal {
   id: string;
   goal_sheet_id: string;
@@ -66,6 +75,7 @@ export interface Goal {
   progress_status: GoalProgress;
   parent_goal_id: string | null;
   sort_order: number;
+  evidence_url?: GoalEvidence[] | null;
   created_at: string;
   updated_at: string;
 }

@@ -154,7 +154,8 @@ export async function distributeSharedGoal(
       actual_achievement: null,
       progress_status: "not_started",
       parent_goal_id: p.id,
-      sort_order: 99, // appended at end
+      sort_order: 99,
+      evidence_url: null,
     };
 
     const { data, error } = await db

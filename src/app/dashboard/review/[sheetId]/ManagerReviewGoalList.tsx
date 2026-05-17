@@ -5,6 +5,7 @@ import { upsertGoals } from "@/lib/actions/goal.actions";
 import { useToast } from "@/hooks/useToast";
 import NeoToast from "@/components/feedback/NeoToast";
 import type { Goal, GoalInsert } from "@/lib/database.types";
+import EvidenceViewer from "@/components/evidence/EvidenceViewer";
 
 export default function ManagerReviewGoalList({ 
   initialGoals, 
@@ -17,7 +18,12 @@ export default function ManagerReviewGoalList({
 }) {
   const [goals, setGoals] = useState<Goal[]>(initialGoals);
   const [isSaving, setIsSaving] = useState(false);
+  const [expandedEvidence, setExpandedEvidence] = useState<Record<string, boolean>>({});
   const { toast, showSuccess, showError } = useToast();
+
+  const toggleEvidence = (goalId: string) => {
+    setExpandedEvidence(prev => ({ ...prev, [goalId]: !prev[goalId] }));
+  };
 
   const updateGoal = (id: string, field: keyof Goal, value: any) => {
     if (isLocked) return;
@@ -39,6 +45,7 @@ export default function ManagerReviewGoalList({
         progress_status: g.progress_status,
         parent_goal_id: g.parent_goal_id,
         sort_order: g.sort_order,
+        evidence_url: g.evidence_url,
         id: g.id
       }));
 
@@ -118,6 +125,29 @@ export default function ManagerReviewGoalList({
                   onChange={(e) => updateGoal(g.id, "description", e.target.value)}
                   className="w-full bg-transparent border border-on-surface p-xs text-label-sm h-16 resize-none"
                 />
+              </div>
+
+              <div className="md:col-span-12">
+                <button
+                  type="button"
+                  onClick={() => toggleEvidence(g.id)}
+                  className="flex items-center gap-sm text-label-md font-[500] text-on-surface-variant hover:text-on-surface transition-colors mt-md pt-md border-t border-on-surface-variant"
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    {expandedEvidence[g.id] ? "expand_less" : "expand_more"}
+                  </span>
+                  View Evidence
+                  {(g.evidence_url as any[])?.length > 0 && (
+                    <span className="px-xs py-xs bg-tertiary-container text-on-tertiary-container text-label-xs font-[700] rounded">
+                      {(g.evidence_url as any[]).length}
+                    </span>
+                  )}
+                </button>
+                {expandedEvidence[g.id] && (
+                  <div className="mt-md">
+                    <EvidenceViewer goalId={g.id} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
