@@ -1,0 +1,375 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>PERFORM - Precision in Alignment</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "on-secondary-fixed-variant": "#3b35a7",
+                "on-primary-fixed-variant": "#3323cc",
+                "secondary-fixed-dim": "#c3c0ff",
+                "on-primary-fixed": "#0f0069",
+                "surface-bright": "#f9f9f9",
+                "on-surface-variant": "#464555",
+                "surface-container": "#eeeeee",
+                "on-primary-container": "#dad7ff",
+                "surface-variant": "#e2e2e2",
+                "inverse-primary": "#c3c0ff",
+                "inverse-surface": "#303030",
+                "inverse-on-surface": "#f1f1f1",
+                "surface-container-lowest": "#ffffff",
+                "background": "#f9f9f9",
+                "on-tertiary-fixed": "#351000",
+                "outline-variant": "#c7c4d8",
+                "error": "#ba1a1a",
+                "primary": "#3525cd",
+                "error-container": "#ffdad6",
+                "tertiary-fixed-dim": "#ffb695",
+                "tertiary-fixed": "#ffdbcc",
+                "surface-container-highest": "#e2e2e2",
+                "surface": "#f9f9f9",
+                "secondary": "#544fc0",
+                "secondary-container": "#8f8bff",
+                "on-tertiary": "#ffffff",
+                "surface-container-high": "#e8e8e8",
+                "on-secondary-fixed": "#0f0069",
+                "on-error-container": "#93000a",
+                "surface-container-low": "#f3f3f3",
+                "surface-dim": "#dadada",
+                "on-surface": "#1b1b1b",
+                "secondary-fixed": "#e2dfff",
+                "on-error": "#ffffff",
+                "tertiary": "#7e3000",
+                "on-background": "#1b1b1b",
+                "tertiary-container": "#a44100",
+                "surface-tint": "#4d44e3",
+                "on-tertiary-fixed-variant": "#7b2f00",
+                "primary-fixed": "#e2dfff",
+                "on-secondary-container": "#231791",
+                "primary-container": "#4f46e5",
+                "on-secondary": "#ffffff",
+                "on-tertiary-container": "#ffd2be",
+                "on-primary": "#ffffff",
+                "primary-fixed-dim": "#c3c0ff",
+                "outline": "#777587"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0rem",
+                      "lg": "0rem",
+                      "xl": "0rem",
+                      "full": "0rem"
+              },
+              "spacing": {
+                      "sm": "8px",
+                      "margin-mobile": "16px",
+                      "base": "4px",
+                      "xl": "40px",
+                      "margin-desktop": "40px",
+                      "xs": "4px",
+                      "2xl": "64px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "gutter": "16px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-sm": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-bold": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "display-xl": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-md": [
+                              "Plus Jakarta Sans"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.03em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.15",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg": [
+                              "40px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.03em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "label-bold": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-xl": [
+                              "64px",
+                              {
+                                      "lineHeight": "1.05",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .solid-shadow-sm { box-shadow: 4px 4px 0px 0px #000000; }
+        .solid-shadow-md { box-shadow: 8px 8px 0px 0px #000000; }
+        .border-sharp { border: 1px solid #000000; }
+        .border-sharp-thick { border: 2px solid #000000; }
+        
+        /* Neobrutalism Button Hover */
+        .btn-neo {
+            transition: all 0.2s ease;
+        }
+        .btn-neo:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0px 0px #000000;
+        }
+        .btn-neo:active {
+            transform: translate(0, 0);
+            box-shadow: 0px 0px 0px 0px #000000;
+        }
+    </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface font-body-md antialiased min-h-screen flex flex-col relative pb-32">
+<!-- TopAppBar from JSON -->
+<header class="bg-surface text-primary font-headline-md text-headline-md font-body-md text-body-md font-label-bold text-label-bold font-headline-md text-headline-md font-black tracking-tighter text-on-surface docked full-width top-0 z-50 border-b border-black flat no shadows transition-all duration-200 active:translate-y-[2px] max-w-7xl mx-auto px-margin-desktop h-16 flex justify-between items-center w-full sticky">
+<div class="flex items-center gap-md">
+<span class="font-headline-md text-headline-md font-black tracking-tighter text-on-surface uppercase">PERFORM</span>
+
+</div>
+<div class="flex items-center gap-xl">
+<nav class="hidden md:flex items-center gap-lg">
+<a class="font-label-bold text-label-bold text-on-surface-variant hover:text-primary hover:underline decoration-2 underline-offset-4 transition-colors" href="#">Goals</a>
+<a class="font-label-bold text-label-bold text-primary border-b-2 border-primary hover:text-primary hover:underline decoration-2 underline-offset-4 transition-colors" href="#">Alignment</a>
+<a class="font-label-bold text-label-bold text-on-surface-variant hover:text-primary hover:underline decoration-2 underline-offset-4 transition-colors" href="#">Insights</a>
+<a class="font-label-bold text-label-bold text-on-surface-variant hover:text-primary hover:underline decoration-2 underline-offset-4 transition-colors" href="#">Pricing</a>
+</nav>
+<div class="flex items-center gap-md">
+<button class="font-label-bold text-label-bold text-white bg-primary border-sharp px-lg py-sm btn-neo solid-shadow-sm uppercase">Launch Workspace</button>
+</div>
+</div>
+</header>
+<main class="flex-grow">
+<!-- Hero Section -->
+<section class="max-w-7xl mx-auto px-margin-desktop py-2xl border-b border-black text-center">
+<div class="max-w-4xl mx-auto space-y-lg">
+<h1 class="font-display-xl text-[64px] font-[700] uppercase leading-none tracking-tighter text-on-surface">
+                        REAL-TIME ALIGNMENT.<br>ZERO SPREADSHEETS.
+                    </h1>
+<p class="font-body-lg text-body-lg text-[#333333] max-w-2xl mx-auto">
+                        Removing manual blind spots with a high-stakes goal tracking system engineered for high-performers who value absolute clarity.
+                    </p>
+<div class="pt-md flex justify-center gap-md">
+<button class="font-label-bold text-label-bold text-white bg-primary border-sharp px-lg py-md btn-neo solid-shadow-sm flex items-center gap-sm uppercase">
+                            Launch Workspace
+                            <span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">arrow_forward</span>
+</button>
+<button class="font-label-bold text-label-bold text-on-surface bg-transparent border-sharp px-lg py-md btn-neo flex items-center gap-sm uppercase">
+                            Request System Demo
+                        </button>
+</div>
+</div>
+</section>
+<!-- Live Component Preview Section -->
+<section class="max-w-7xl mx-auto px-margin-desktop py-xl border-b border-black bg-surface-container-low">
+<div class="border-sharp-thick bg-surface-container-lowest p-0 solid-shadow-md flex flex-col gap-0 max-w-5xl mx-auto">
+<div class="flex justify-between items-center p-md border-b-2 border-black bg-surface-container">
+<span class="font-label-bold text-label-bold uppercase tracking-widest text-on-surface">CYCLE YEAR: 2026</span>
+<span class="font-label-bold text-label-bold uppercase bg-[#fff3cd] text-[#856404] border-sharp px-sm py-xs">STATUS: PENDING APPROVAL</span>
+</div>
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-black bg-surface-container-highest">
+<th class="p-sm font-label-bold text-label-bold uppercase border-r border-black">THRUST AREA</th>
+<th class="p-sm font-label-bold text-label-bold uppercase border-r border-black">GOAL TITLE</th>
+<th class="p-sm font-label-bold text-label-bold uppercase border-r border-black">TARGET</th>
+<th class="p-sm font-label-bold text-label-bold uppercase border-r border-black w-24 text-center">WEIGHT</th>
+<th class="p-sm font-label-bold text-label-bold uppercase w-48 text-center">PROGRESS</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-surface-variant hover:bg-surface-bright">
+<td class="p-sm font-body-md border-r border-black">Engineering</td>
+<td class="p-sm font-body-md border-r border-black font-bold">Optimize Core Database</td>
+<td class="p-sm font-body-md border-r border-black">0.1% Uptime</td>
+<td class="p-sm font-body-md border-r border-black text-center font-bold text-primary">25%</td>
+<td class="p-sm text-center">
+<div class="w-full bg-surface-container border-sharp h-4 relative">
+<div class="bg-primary h-full border-r border-black" style="width: 80%"></div>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright">
+<td class="p-sm font-body-md border-r border-black">Operations</td>
+<td class="p-sm font-body-md border-r border-black font-bold">Automate Check-In Sync</td>
+<td class="p-sm font-body-md border-r border-black">0 Incidents</td>
+<td class="p-sm font-body-md border-r border-black text-center font-bold text-primary">15%</td>
+<td class="p-sm text-center">
+<div class="w-full bg-surface-container border-sharp h-4 relative">
+<div class="bg-primary h-full border-r border-black" style="width: 100%"></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="flex justify-between items-center p-sm border-t-2 border-black bg-surface-container text-xs font-label-bold">
+<span class="uppercase">TOTAL ENTRIES: 2/8</span>
+<span class="uppercase">BALANCE: 100%</span>
+<span class="uppercase text-[#155724] bg-[#d4edda] border-sharp px-xs py-base flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">check</span> STATUS: VALID</span>
+</div>
+</div>
+</section>
+<!-- Business Rules & Constraint Matrix -->
+<section class="max-w-7xl mx-auto px-margin-desktop py-2xl border-b border-black">
+<div class="mb-lg">
+<h2 class="font-headline-lg text-headline-lg uppercase tracking-tighter">System Constraints</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-0 border-sharp-thick bg-[#f4f4f5]">
+<div class="p-xl border-b md:border-b-0 md:border-r border-black flex flex-col gap-md">
+<h3 class="font-headline-md text-headline-md uppercase tracking-tight">The 100% Weightage Rule</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        The system strictly blocks submission unless the sum of all individual goal weights equals exactly 100%. No exceptions. This ensures comprehensive accountability across the board.
+                    </p>
+</div>
+<div class="p-xl border-b md:border-b-0 md:border-r border-black flex flex-col gap-md">
+<h3 class="font-headline-md text-headline-md uppercase tracking-tight">The 10% Floor Constraint</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        No single objective may carry less than 10% of total weight. If an effort is worth tracking in this system, it must represent a structurally significant portion of focus.
+                    </p>
+</div>
+<div class="p-xl flex flex-col gap-md">
+<h3 class="font-headline-md text-headline-md uppercase tracking-tight">The 8-Goal Ceiling Cap</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        Focus demands limitation. The system will forcibly freeze any additions once 8 top-level goals are established, enforcing prioritization over proliferation.
+                    </p>
+</div>
+</div>
+</section>
+<!-- Dynamic Progress & Calculation Showcase -->
+<section class="max-w-7xl mx-auto px-margin-desktop py-2xl">
+<div class="mb-lg">
+<h2 class="font-headline-lg text-headline-lg uppercase tracking-tighter">Calculation Logic</h2>
+</div>
+<div class="border-sharp-thick w-full overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-on-surface text-surface uppercase font-label-bold text-label-bold">
+<th class="p-md border-r border-surface-variant">Metric Type</th>
+<th class="p-md border-r border-surface-variant">Logic Definition</th>
+<th class="p-md">Formula Execution</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-black bg-surface-container-lowest">
+<td class="p-md font-label-bold uppercase border-r border-black whitespace-nowrap">Numeric MIN</td>
+<td class="p-md font-body-md border-r border-black">Higher metrics equal success.</td>
+<td class="p-md font-mono text-sm">Progress = (Actual / Target) * 100</td>
+</tr>
+<tr class="border-b border-black bg-surface-container-low">
+<td class="p-md font-label-bold uppercase border-r border-black whitespace-nowrap">Numeric MAX</td>
+<td class="p-md font-body-md border-r border-black">Lower metrics equal success.</td>
+<td class="p-md font-mono text-sm">Progress = (Target / Actual) * 100</td>
+</tr>
+<tr class="bg-surface-container-lowest">
+<td class="p-md font-label-bold uppercase border-r border-black whitespace-nowrap">Zero-Based</td>
+<td class="p-md font-body-md border-r border-black">Absolute zero is 100%.</td>
+<td class="p-md font-mono text-sm">If Actual == 0 Then 100% Else 0%</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</main>
+<!-- Footer from JSON -->
+<footer class="bg-on-surface text-surface font-label-bold text-label-bold font-body-md text-body-md font-headline-md text-headline-md font-black full-width bottom-0 border-t-2 border-on-surface flat no shadows underline hover:text-surface transition-colors transition-transform duration-100 hover:-translate-y-0.5 max-w-7xl mx-auto px-margin-desktop py-xl flex flex-col md:flex-row justify-between items-start gap-lg w-full mt-auto">
+<div class="flex flex-col gap-sm">
+<span class="font-headline-md text-headline-md font-black tracking-tighter">PERFORM</span>
+<p class="font-label-bold text-label-bold text-surface-variant opacity-80 max-w-xs">
+                © 2024 PERFORM PERFORMANCE SYSTEMS. BUILT FOR HIGH-STAKES ALIGNMENT.
+            </p>
+</div>
+<div class="flex flex-col md:flex-row gap-lg md:gap-xl">
+<div class="flex flex-col gap-sm">
+<a class="font-label-bold text-label-bold text-surface-variant hover:text-surface transition-colors" href="#">Terms of Service</a>
+<a class="font-label-bold text-label-bold text-surface-variant hover:text-surface transition-colors" href="#">Privacy Protocol</a>
+</div>
+<div class="flex flex-col gap-sm">
+<a class="font-label-bold text-label-bold text-surface-variant hover:text-surface transition-colors" href="#">Security Standards</a>
+<a class="font-label-bold text-label-bold text-surface-variant hover:text-surface transition-colors" href="#">Q4 Roadmap</a>
+</div>
+</div>
+</footer>
+<!-- Persistent Evaluation Helper Toolbar -->
+<div class="fixed bottom-8 right-8 z-50 flex gap-0 border-sharp-thick bg-surface-container-lowest solid-shadow-md overflow-hidden p-0">
+
+
+
+</div>
+
+
+</body></html>

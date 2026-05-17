@@ -132,6 +132,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+p {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: normal !important;
+}
+
 /* ─── Material Symbols ─── */
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
