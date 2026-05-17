@@ -6,7 +6,7 @@
 // ─── Enum Mirrors ───────────────────────────────────────────
 export type AppRole = "employee" | "manager" | "admin";
 export type SheetStatus = "draft" | "submitted" | "locked";
-export type UomType = "numeric_min" | "numeric_max" | "timeline" | "zero_based";
+export type UomType = "numeric_min" | "percentage_min" | "numeric_max" | "percentage_max" | "timeline" | "zero_based";
 export type GoalProgress = "not_started" | "on_track" | "completed";
 export type QuarterPhase = "Q1" | "Q2" | "Q3" | "Q4_Annual";
 

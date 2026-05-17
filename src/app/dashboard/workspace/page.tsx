@@ -75,7 +75,7 @@ export default function GoalWorkspace() {
               thrustArea: "Revenue Growth",
               title: "New Goal",
               description: "",
-              unit: "numeric_max",
+              unit: "numeric_min",
               target: "100",
               weightage: 10,
             },
@@ -89,7 +89,7 @@ export default function GoalWorkspace() {
             thrustArea: "Revenue Growth",
             title: "New Goal",
             description: "",
-            unit: "numeric_max",
+            unit: "numeric_min",
             target: "100",
             weightage: 10,
           },
@@ -131,7 +131,7 @@ export default function GoalWorkspace() {
         thrustArea: "Revenue Growth",
         title: "New Goal",
         description: "",
-        unit: "numeric_max",
+        unit: "numeric_min",
         target: "",
         weightage: 10,
       },
@@ -148,7 +148,7 @@ export default function GoalWorkspace() {
           thrust_area: r.thrustArea,
           title: r.title,
           description: r.description,
-          uom: "numeric_max", // Hardcoded for simplified UI matching
+          uom: r.unit as any, // Explicitly cast to UomType
           target_value: String(r.target),
           weightage: r.weightage,
           actual_achievement: null,
@@ -232,16 +232,31 @@ export default function GoalWorkspace() {
               {/* Metrics Cluster */}
               <div className="md:col-span-4 grid grid-cols-3">
                 {/* Unit */}
-                <div className="col-span-1 border-r border-on-surface p-md flex flex-col">
+                <div className="col-span-1 border-r border-on-surface p-md flex flex-col bg-surface-bright">
                   <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase mb-sm text-[10px]">
                     Unit
                   </label>
-                  <input
-                    type="text"
-                    value={row.unit}
-                    onChange={(e) => updateRow(row.id, "unit", e.target.value)}
-                    className="w-full flex-1 bg-transparent border border-on-surface text-label-bold font-[700] tracking-[0.05em] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm text-center rounded-none"
-                  />
+                  <div className="relative flex-1">
+                    <select
+                      value={row.unit}
+                      onChange={(e) => updateRow(row.id, "unit", e.target.value)}
+                      className="w-full h-full min-h-[48px] bg-transparent border border-on-surface text-label-bold font-[700] tracking-[0.05em] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm appearance-none rounded-none cursor-pointer"
+                    >
+                      <optgroup label="Min (Higher is Better)">
+                        <option value="numeric_min">Numeric (Min)</option>
+                        <option value="percentage_min">Percentage (Min)</option>
+                      </optgroup>
+                      <optgroup label="Max (Lower is Better)">
+                        <option value="numeric_max">Numeric (Max)</option>
+                        <option value="percentage_max">Percentage (Max)</option>
+                      </optgroup>
+                      <option value="timeline">Timeline</option>
+                      <option value="zero_based">Zero Based</option>
+                    </select>
+                    <span className="material-symbols-outlined absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface text-[16px]">
+                      arrow_drop_down
+                    </span>
+                  </div>
                 </div>
                 {/* Target */}
                 <div className="col-span-1 border-r border-on-surface p-md flex flex-col bg-surface">

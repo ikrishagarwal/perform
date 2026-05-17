@@ -37,10 +37,12 @@ export function calculateProgress(
 
   switch (uom) {
     case "numeric_min":
+    case "percentage_min":
       if (target <= 0) return 0;
       return Math.min(Math.round((actual / target) * 100), 100);
 
     case "numeric_max":
+    case "percentage_max":
       if (actual <= 0) return 0;
       return Math.min(Math.round((target / actual) * 100), 100);
 

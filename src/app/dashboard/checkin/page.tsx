@@ -219,13 +219,26 @@ export default function PerformanceCheckin() {
             const isAtRisk = progress >= 30 && progress < 70;
 
             /* Format display target */
-            const displayTarget =
-              goal.uom === "numeric_min" &&
-              parseFloat(goal.target_value) >= 1000000
-                ? `$${(parseFloat(goal.target_value) / 1000000).toFixed(1)}M`
-                : goal.uom === "numeric_max"
-                  ? `${goal.target_value}ms`
-                  : `${goal.target_value}%`;
+            const displayTarget = (() => {
+              if (goal.uom === "percentage_min" || goal.uom === "percentage_max") {
+                return `${goal.target_value}%`;
+              }
+              if (goal.uom === "timeline") {
+                return goal.target_value; // Assuming date string
+              }
+              if (goal.uom === "zero_based") {
+                return "0 (Zero)";
+              }
+              // Numeric fallback with existing "smart" logic
+              const val = parseFloat(goal.target_value);
+              if (goal.uom === "numeric_min" && val >= 1000000) {
+                return `$${(val / 1000000).toFixed(1)}M`;
+              }
+              if (goal.uom === "numeric_max") {
+                return `${goal.target_value}ms`;
+              }
+              return goal.target_value;
+            })();
 
             const statusLabel = isOnTrack
               ? "On Track"
@@ -293,12 +306,11 @@ export default function PerformanceCheckin() {
                         Actual Achievement
                       </p>
                       <div className="relative flex items-center">
-                        {goal.uom === "numeric_min" &&
-                          parseFloat(goal.target_value) >= 1000000 && (
-                            <span className="absolute left-sm top-1/2 -translate-y-1/2 text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant">
-                              $
-                            </span>
-                          )}
+                        {(goal.uom === "numeric_min" && parseFloat(goal.target_value) >= 1000000) && (
+                          <span className="absolute left-sm top-1/2 -translate-y-1/2 text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant">
+                            $
+                          </span>
+                        )}
                         <input
                           type="text"
                           value={actual}
@@ -309,21 +321,24 @@ export default function PerformanceCheckin() {
                             }))
                           }
                           className={`w-32 py-xs bg-surface-container-highest border-b-2 border-on-surface focus:border-primary focus:bg-primary-fixed focus:outline-none text-headline-md font-[700] text-on-surface transition-colors ${
-                            goal.uom === "numeric_min" &&
-                            parseFloat(goal.target_value) >= 1000000
+                            (goal.uom === "numeric_min" && parseFloat(goal.target_value) >= 1000000)
                               ? "pl-lg pr-sm"
-                              : goal.uom === "numeric_max"
+                              : (goal.uom === "percentage_min" || goal.uom === "percentage_max" || (goal.uom === "numeric_min" && parseFloat(goal.target_value) < 1000000) || goal.uom === "numeric_max")
                                 ? "pl-sm pr-lg text-right"
-                                : "pl-sm pr-lg text-right"
+                                : "pl-sm pr-sm"
                           }`}
                           placeholder="0"
                         />
-                        {goal.uom === "numeric_min" &&
-                          parseFloat(goal.target_value) < 1000000 && (
-                            <span className="absolute right-sm top-1/2 -translate-y-1/2 text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant">
-                              %
-                            </span>
-                          )}
+                        {(goal.uom === "percentage_min" || goal.uom === "percentage_max" || (goal.uom === "numeric_min" && parseFloat(goal.target_value) < 1000000)) && (
+                          <span className="absolute right-sm top-1/2 -translate-y-1/2 text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant">
+                            %
+                          </span>
+                        )}
+                        {goal.uom === "numeric_max" && (
+                          <span className="absolute right-sm top-1/2 -translate-y-1/2 text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant">
+                            ms
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
