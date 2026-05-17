@@ -826,3 +826,262 @@ export async function getGoalCheckins(goalId: string): Promise<GoalCheckin[]> {
   if (result.error) throw new Error(`Failed to fetch check-ins: ${result.error.message}`);
   return result.data || [];
 }
+
+// ─── QoQ Analytics for Admin ───────────────────────────────────
+
+import type { QuarterPhase, GoalProgress } from "@/lib/database.types";
+
+export interface QoQProgressSummary {
+  quarter: QuarterPhase;
+  totalGoals: number;
+  completedGoals: number;
+  onTrackGoals: number;
+  notStartedGoals: number;
+  completionRate: number;
+}
+
+export interface DepartmentQoQData {
+  departmentName: string;
+  managerId: string;
+  managerName: string;
+  quarters: Record<QuarterPhase, QoQProgressSummary>;
+  trends: {
+    improvement: number;
+    quarterOverQuarterChange: number;
+  };
+}
+
+export interface OrgQoQAnalytics {
+  overall: Record<QuarterPhase, QoQProgressSummary>;
+  byDepartment: DepartmentQoQData[];
+  periodComparison: {
+    q1ToQ2: { completedChange: number; onTrackChange: number };
+    q2ToQ3: { completedChange: number; onTrackChange: number };
+    q3ToQ4: { completedChange: number; onTrackChange: number };
+  };
+}
+
+function calculateQuarterSummary(
+  progressData: { progress_status: GoalProgress }[]
+): QoQProgressSummary {
+  const total = progressData.length;
+  const completed = progressData.filter((p) => p.progress_status === "completed").length;
+  const onTrack = progressData.filter((p) => p.progress_status === "on_track").length;
+  const notStarted = progressData.filter((p) => p.progress_status === "not_started").length;
+
+  return {
+    quarter: "Q1" as QuarterPhase,
+    totalGoals: total,
+    completedGoals: completed,
+    onTrackGoals: onTrack,
+    notStartedGoals: notStarted,
+    completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+  };
+}
+
+export async function getOrgQoQAnalytics(): Promise<OrgQoQAnalytics> {
+  const db = await createServerClient();
+
+  const quarters: QuarterPhase[] = ["Q1", "Q2", "Q3", "Q4_Annual"];
+
+  const overall: Record<QuarterPhase, QoQProgressSummary> = {
+    Q1: { quarter: "Q1", totalGoals: 0, completedGoals: 0, onTrackGoals: 0, notStartedGoals: 0, completionRate: 0 },
+    Q2: { quarter: "Q2", totalGoals: 0, completedGoals: 0, onTrackGoals: 0, notStartedGoals: 0, completionRate: 0 },
+    Q3: { quarter: "Q3", totalGoals: 0, completedGoals: 0, onTrackGoals: 0, notStartedGoals: 0, completionRate: 0 },
+    Q4_Annual: { quarter: "Q4_Annual", totalGoals: 0, completedGoals: 0, onTrackGoals: 0, notStartedGoals: 0, completionRate: 0 },
+  };
+
+  for (const quarter of quarters) {
+    const { data: progress, error } = await db
+      .from("goal_quarterly_progress")
+      .select("progress_status")
+      .eq("quarter_phase", quarter);
+
+    if (error) console.warn(`Failed to fetch ${quarter} progress:`, error);
+
+    const progressArr = (progress as { progress_status: GoalProgress }[]) ?? [];
+    overall[quarter] = calculateQuarterSummary(progressArr);
+  }
+
+  const { data: managers } = await db
+    .from("profiles")
+    .select("id, full_name")
+    .eq("role", "manager")
+    .eq("is_active", true);
+
+  const byDepartment: DepartmentQoQData[] = [];
+
+  for (const mgr of (managers as Profile[]) ?? []) {
+    const { data: reports } = await db
+      .from("profiles")
+      .select("id")
+      .eq("manager_id", mgr.id);
+
+    const reportIds = (reports as Profile[])?.map((r) => r.id) ?? [];
+    if (reportIds.length === 0) continue;
+
+    const { data: employeeProgress } = await db
+      .from("goal_quarterly_progress")
+      .select("quarter_phase, progress_status")
+      .in("submitted_by", reportIds);
+
+    const deptQuarters: Record<QuarterPhase, QoQProgressSummary> = {
+      Q1: { quarter: "Q1", totalGoals: 0, completedGoals: 0, onTrackGoals: 0, notStartedGoals: 0, completionRate: 0 },
+      Q2: { quarter: "Q2", totalGoals: 0, completedGoals: 0, onTrackGoals: 0, notStartedGoals: 0, completionRate: 0 },
+      Q3: { quarter: "Q3", totalGoals: 0, completedGoals: 0, onTrackGoals: 0, notStartedGoals: 0, completionRate: 0 },
+      Q4_Annual: { quarter: "Q4_Annual", totalGoals: 0, completedGoals: 0, onTrackGoals: 0, notStartedGoals: 0, completionRate: 0 },
+    };
+
+    for (const quarter of quarters) {
+      const qProgress = (employeeProgress as { quarter_phase: QuarterPhase; progress_status: GoalProgress }[] | null)
+        ?.filter((p) => p.quarter_phase === quarter) ?? [];
+      deptQuarters[quarter] = calculateQuarterSummary(qProgress);
+    }
+
+    const q1Completed = deptQuarters.Q1.completedGoals;
+    const q2Completed = deptQuarters.Q2.completedGoals;
+    const q1OnTrack = deptQuarters.Q1.onTrackGoals + deptQuarters.Q1.completedGoals;
+    const q2OnTrack = deptQuarters.Q2.onTrackGoals + deptQuarters.Q2.completedGoals;
+
+    byDepartment.push({
+      departmentName: `${mgr.full_name}'s Team`,
+      managerId: mgr.id,
+      managerName: mgr.full_name,
+      quarters: deptQuarters,
+      trends: {
+        improvement: q1Completed > 0 ? Math.round(((q2Completed - q1Completed) / q1Completed) * 100) : 0,
+        quarterOverQuarterChange: q1OnTrack > 0 ? Math.round(((q2OnTrack - q1OnTrack) / q1OnTrack) * 100) : 0,
+      },
+    });
+  }
+
+  const q1ToQ2 = {
+    completedChange: overall.Q2.completedGoals - overall.Q1.completedGoals,
+    onTrackChange: (overall.Q2.onTrackGoals + overall.Q2.completedGoals) - (overall.Q1.onTrackGoals + overall.Q1.completedGoals),
+  };
+
+  const q2ToQ3 = {
+    completedChange: overall.Q3.completedGoals - overall.Q2.completedGoals,
+    onTrackChange: (overall.Q3.onTrackGoals + overall.Q3.completedGoals) - (overall.Q2.onTrackGoals + overall.Q2.completedGoals),
+  };
+
+  return {
+    overall,
+    byDepartment,
+    periodComparison: {
+      q1ToQ2,
+      q2ToQ3,
+      q3ToQ4: {
+        completedChange: overall.Q4_Annual.completedGoals - overall.Q3.completedGoals,
+        onTrackChange: (overall.Q4_Annual.onTrackGoals + overall.Q4_Annual.completedGoals) - (overall.Q3.onTrackGoals + overall.Q3.completedGoals),
+      },
+    },
+  };
+}
+
+export async function getQuarterlyProgressReport(
+  quarter: QuarterPhase
+): Promise<{
+  employeeId: string;
+  employeeName: string;
+  goalId: string;
+  goalTitle: string;
+  targetValue: string;
+  actualAchievement: string;
+  progressStatus: GoalProgress;
+  submittedAt: string;
+}[]> {
+  const db = await createServerClient();
+
+  const { data: progress, error } = await db
+    .from("goal_quarterly_progress")
+    .select("goal_id, actual_achievement, progress_status, submitted_at, submitted_by")
+    .eq("quarter_phase", quarter);
+
+  if (error) throw new Error(`Failed to fetch quarterly report: ${error.message}`);
+
+  const progressArr = progress as { goal_id: string; actual_achievement: string; progress_status: GoalProgress; submitted_at: string; submitted_by: string }[];
+  const goalIds = progressArr.map((p) => p.goal_id);
+  const userIds = [...new Set(progressArr.map((p) => p.submitted_by))];
+
+  const [{ data: goals }, { data: profiles }] = await Promise.all([
+    db.from("goals").select("id, title, target_value, goal_sheet_id").in("id", goalIds),
+    db.from("profiles").select("id, full_name").in("id", userIds),
+  ]);
+
+  const goalMap = new Map<string, { title: string; target_value: string }>();
+  for (const g of (goals as Goal[]) ?? []) {
+    goalMap.set(g.id, { title: g.title, target_value: g.target_value });
+  }
+
+  const profileMap = new Map<string, string>();
+  for (const p of (profiles as Profile[]) ?? []) {
+    profileMap.set(p.id, p.full_name);
+  }
+
+  const { data: goalSheets } = await db
+    .from("goal_sheets")
+    .select("id, employee_id")
+    .in("id", ((goals as Goal[]) ?? []).map((g) => g.goal_sheet_id));
+
+  const sheetToEmployee = new Map<string, string>();
+  for (const s of (goalSheets as GoalSheet[]) ?? []) {
+    sheetToEmployee.set(s.id, s.employee_id);
+  }
+
+  const result: {
+    employeeId: string;
+    employeeName: string;
+    goalId: string;
+    goalTitle: string;
+    targetValue: string;
+    actualAchievement: string;
+    progressStatus: GoalProgress;
+    submittedAt: string;
+  }[] = [];
+
+  for (const p of progressArr) {
+    const goal = goalMap.get(p.goal_id);
+    const employeeId = sheetToEmployee.get((goals as Goal[])?.find((g) => g.id === p.goal_id)?.goal_sheet_id ?? "") ?? "";
+    const employeeName = profileMap.get(p.submitted_by) ?? "Unknown";
+
+    result.push({
+      employeeId,
+      employeeName,
+      goalId: p.goal_id,
+      goalTitle: goal?.title ?? "Unknown",
+      targetValue: goal?.target_value ?? "",
+      actualAchievement: p.actual_achievement,
+      progressStatus: p.progress_status,
+      submittedAt: p.submitted_at,
+    });
+  }
+
+  return result;
+}
+
+export async function getAuditLogsByQuarter(quarter?: QuarterPhase): Promise<AuditLog[]> {
+  const db = await createServerClient();
+
+  let query = db
+    .from("audit_logs")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (quarter) {
+    const { data: goalsInQuarter } = await db
+      .from("goal_quarterly_progress")
+      .select("goal_id")
+      .eq("quarter_phase", quarter);
+
+    const goalIds = (goalsInQuarter as { goal_id: string }[])?.map((g) => g.goal_id) ?? [];
+    if (goalIds.length > 0) {
+      query = query.in("goal_id", goalIds);
+    }
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw new Error(`Failed to fetch audit logs: ${error.message}`);
+  return (data as AuditLog[]) ?? [];
+}

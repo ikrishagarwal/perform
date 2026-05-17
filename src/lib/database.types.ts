@@ -79,6 +79,7 @@ export interface Goal {
   evidence_url?: GoalEvidence[] | null;
   created_at: string;
   updated_at: string;
+  current_quarter?: QuarterPhase | null;
 }
 
 export interface CheckinComment {
@@ -103,6 +104,16 @@ export interface AuditLog {
   modified_by: string;
   changed_fields: AuditLogChangedField[];
   created_at: string;
+}
+
+export interface GoalQuarterlyProgress {
+  id: string;
+  goal_id: string;
+  quarter_phase: QuarterPhase;
+  actual_achievement: string;
+  progress_status: GoalProgress;
+  submitted_at: string;
+  submitted_by: string;
 }
 
 export interface Notification {
@@ -140,6 +151,10 @@ export interface GoalWithSheet extends Goal {
   goal_sheet: GoalSheet;
 }
 
+export interface GoalWithQuarterlyHistory extends Goal {
+  quarterly_progress: GoalQuarterlyProgress[];
+}
+
 // ─── Supabase Generated Database Interface ──────────────────
 
 export type Database = {
@@ -174,6 +189,11 @@ export type Database = {
         Row: AuditLog;
         Insert: Record<string, never>; // system-managed only
         Update: Record<string, never>;
+      };
+      goal_quarterly_progress: {
+        Row: GoalQuarterlyProgress;
+        Insert: Omit<GoalQuarterlyProgress, "id" | "submitted_at">;
+        Update: Partial<Pick<GoalQuarterlyProgress, "actual_achievement" | "progress_status">>;
       };
     };
     Enums: {

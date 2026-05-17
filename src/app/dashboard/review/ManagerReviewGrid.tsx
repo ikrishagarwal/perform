@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { GoalSheetWithGoals } from "@/lib/database.types";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { GoalSheetWithGoals, QuarterPhase } from "@/lib/database.types";
 
 /* ─── Status Badge ─── */
 function ReviewStatusBadge({ status }: { status: string }) {
@@ -35,11 +36,25 @@ function ReviewStatusBadge({ status }: { status: string }) {
 }
 
 export default function ManagerReviewGrid({ 
-  initialSheets 
+  initialSheets,
+  selectedQuarter
 }: { 
-  initialSheets: GoalSheetWithGoals[] 
+  initialSheets: GoalSheetWithGoals[];
+  selectedQuarter?: QuarterPhase;
 }) {
   const [filter, setFilter] = useState<"all" | "pending" | "approved">("all");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const handleQuarterChange = (quarter: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (quarter && quarter !== "all") {
+      params.set("quarter", quarter);
+    } else {
+      params.delete("quarter");
+    }
+    router.push(`/dashboard/review?${params.toString()}`);
+  };
 
   const filteredRows = initialSheets.filter((sheet) => {
     if (filter === "all") return true;
@@ -55,7 +70,30 @@ export default function ManagerReviewGrid({
 
   return (
     <div className="flex flex-col gap-xl">
-      {/* Filters */}
+      {/* Quarter Selector */}
+      <div className="flex flex-wrap gap-md items-center border-b border-on-surface pb-md">
+        <span className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase">
+          View Quarter:
+        </span>
+        <select
+          value={selectedQuarter || ""}
+          onChange={(e) => handleQuarterChange(e.target.value)}
+          className="px-md py-sm border-2 border-on-surface bg-surface text-label-bold font-[700] tracking-[0.05em] focus:ring-0 focus:border-primary"
+        >
+          <option value="all">All Goals (Initial Setup)</option>
+          <option value="Q1">Q1 Check-in</option>
+          <option value="Q2">Q2 Check-in</option>
+          <option value="Q3">Q3 Check-in</option>
+          <option value="Q4_Annual">Q4 Annual Review</option>
+        </select>
+        {selectedQuarter && (
+          <span className="text-label-sm font-[500] text-on-surface-variant italic">
+            (Read-only historical view)
+          </span>
+        )}
+      </div>
+
+      {/* Status Filters */}
       <div className="flex flex-wrap gap-sm items-center">
         <button 
           onClick={() => setFilter("all")}

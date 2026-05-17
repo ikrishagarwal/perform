@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { getTeamSheets } from "@/lib/actions/goal-sheet.actions";
+import { getTeamSheets, getTeamSheetsWithQuarterData } from "@/lib/actions/goal-sheet.actions";
 import { createServerClient } from "@/lib/supabase/server";
 import ManagerReviewGrid from "./ManagerReviewGrid";
+import type { QuarterPhase } from "@/lib/database.types";
 
 export const metadata: Metadata = {
   title: "Manager Review — PERFORM",
@@ -9,7 +10,11 @@ export const metadata: Metadata = {
     "Review and approve team goals for the current performance cycle.",
 };
 
-export default async function ManagerReviewPage() {
+interface Props {
+  searchParams: Promise<{ quarter?: string }>;
+}
+
+export default async function ManagerReviewPage({ searchParams }: Props) {
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -17,7 +22,13 @@ export default async function ManagerReviewPage() {
 
   if (!user) return null;
 
-  const sheets = await getTeamSheets(user.id);
+  const params = await searchParams;
+  const selectedQuarter = params.quarter as QuarterPhase | undefined;
+
+  // If a quarter is selected, use quarter-aware data fetch
+  const sheets = selectedQuarter 
+    ? await getTeamSheetsWithQuarterData(user.id, selectedQuarter)
+    : await getTeamSheets(user.id);
 
   return (
     <div className="flex flex-col gap-xl max-w-7xl mx-auto w-full">
@@ -32,7 +43,7 @@ export default async function ManagerReviewPage() {
         </p>
       </header>
 
-      <ManagerReviewGrid initialSheets={sheets} />
+      <ManagerReviewGrid initialSheets={sheets} selectedQuarter={selectedQuarter} />
     </div>
   );
 }

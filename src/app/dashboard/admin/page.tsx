@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/database.types";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getComplianceMetrics, getCurrentPhase, getPhaseStats } from "@/lib/actions/admin.actions";
+import { getComplianceMetrics, getCurrentPhase, getPhaseStats, getOrgQoQAnalytics, type OrgQoQAnalytics, type QoQProgressSummary } from "@/lib/actions/admin.actions";
 
 export const metadata: Metadata = {
   title: "Admin Hub — PERFORM",
@@ -43,6 +43,15 @@ export default async function AdminHubPage() {
   }
 
   const currentPhase = await getCurrentPhase();
+  
+  // Fetch QoQ Analytics
+  let qoqAnalytics: OrgQoQAnalytics | null = null;
+  try {
+    qoqAnalytics = await getOrgQoQAnalytics();
+  } catch (err) {
+    console.warn("Could not load QoQ analytics:", err);
+  }
+
   const phaseStats = await Promise.all([
     getPhaseStats("GOAL_SETTING"),
     getPhaseStats("Q1"),
@@ -147,6 +156,158 @@ export default async function AdminHubPage() {
           })}
         </div>
       </div>
+
+      {/* QoQ Analytics Section */}
+      {qoqAnalytics && (
+        <div className="border-2 border-on-surface bg-surface-container-lowest p-lg">
+          <div className="flex items-center justify-between mb-md">
+            <h2 className="text-headline-md font-[800] text-on-surface">Quarter-on-Quarter Progress</h2>
+          </div>
+          
+          {/* Aggregate QoQ Progress Bars */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-lg">
+            {(["Q1", "Q2", "Q3", "Q4_Annual"] as const).map((quarter) => {
+              const qData = qoqAnalytics.overall[quarter];
+              if (!qData || qData.totalGoals === 0) {
+                return (
+                  <div key={quarter} className="border-2 border-on-surface p-md bg-surface">
+                    <div className="text-label-bold font-[700] uppercase text-xs text-on-surface-variant mb-xs">
+                      {quarter === "Q4_Annual" ? "Q4 Annual" : quarter}
+                    </div>
+                    <div className="text-body-md text-on-surface-variant italic">No data yet</div>
+                  </div>
+                );
+              }
+              const onTrackPct = Math.round(((qData.completedGoals + qData.onTrackGoals) / qData.totalGoals) * 100);
+              const completedPct = Math.round((qData.completedGoals / qData.totalGoals) * 100);
+              
+              return (
+                <div key={quarter} className="border-2 border-on-surface p-md bg-surface">
+                  <div className="text-label-bold font-[700] uppercase text-xs text-on-surface-variant mb-xs">
+                    {quarter === "Q4_Annual" ? "Q4 Annual" : quarter}
+                  </div>
+                  <div className="flex justify-between items-end mb-sm">
+                    <span className="text-headline-md font-[800] text-on-surface">
+                      {qData.completedGoals}/{qData.totalGoals}
+                    </span>
+                    <span className="text-label-sm text-on-surface-variant">goals</span>
+                  </div>
+                  <div className="mb-xs">
+                    <div className="h-4 w-full border border-on-surface bg-surface-container-high flex overflow-hidden">
+                      <div
+                        className="h-full bg-primary"
+                        style={{ width: `${completedPct}%` }}
+                        title={`Completed: ${completedPct}%`}
+                      />
+                      <div
+                        className="h-full bg-tertiary"
+                        style={{ width: `${onTrackPct - completedPct}%` }}
+                        title={`On Track: ${onTrackPct - completedPct}%`}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-label-sm">
+                    <span className="text-primary font-[700]">{completedPct}% complete</span>
+                    <span className="text-on-surface-variant">{onTrackPct}% on track</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Period Comparison */}
+          {qoqAnalytics.periodComparison && (
+            <div className="border-t-2 border-on-surface pt-md">
+              <h3 className="text-label-bold font-[700] uppercase text-xs text-on-surface-variant mb-md">
+                Period-over-Period Changes
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+                {[
+                  { label: "Q1 to Q2", data: qoqAnalytics.periodComparison.q1ToQ2 },
+                  { label: "Q2 to Q3", data: qoqAnalytics.periodComparison.q2ToQ3 },
+                  { label: "Q3 to Q4", data: qoqAnalytics.periodComparison.q3ToQ4 },
+                ].map((period) => {
+                  const completedChange = period.data.completedChange;
+                  const onTrackChange = period.data.onTrackChange;
+                  const isPositive = completedChange >= 0;
+                  
+                  return (
+                    <div key={period.label} className="bg-surface p-md border border-on-surface">
+                      <div className="text-label-bold font-[700] uppercase text-xs text-on-surface-variant mb-xs">
+                        {period.label}
+                      </div>
+                      <div className="flex justify-between">
+                        <div>
+                          <span className={`text-label-bold font-[700] ${isPositive ? "text-primary" : "text-error"}`}>
+                            {isPositive ? "+" : ""}{completedChange}
+                          </span>
+                          <span className="text-label-sm text-on-surface-variant ml-xs">completed</span>
+                        </div>
+                        <div>
+                          <span className={`text-label-bold font-[700] ${onTrackChange >= 0 ? "text-tertiary" : "text-error"}`}>
+                            {onTrackChange >= 0 ? "+" : ""}{onTrackChange}
+                          </span>
+                          <span className="text-label-sm text-on-surface-variant ml-xs">on track</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Department Breakdown */}
+          {qoqAnalytics.byDepartment.length > 0 && (
+            <div className="border-t-2 border-on-surface pt-md mt-md">
+              <h3 className="text-label-bold font-[700] uppercase text-xs text-on-surface-variant mb-md">
+                Department Performance
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+                {qoqAnalytics.byDepartment.slice(0, 6).map((dept) => {
+                  const q1 = dept.quarters.Q1;
+                  const q2 = dept.quarters.Q2;
+                  const q1Total = q1.completedGoals + q1.onTrackGoals + q1.notStartedGoals;
+                  const q2Total = q2.completedGoals + q2.onTrackGoals + q2.notStartedGoals;
+                  const q1Rate = q1Total > 0 ? Math.round(((q1.completedGoals + q1.onTrackGoals) / q1Total) * 100) : 0;
+                  const q2Rate = q2Total > 0 ? Math.round(((q2.completedGoals + q2.onTrackGoals) / q2Total) * 100) : 0;
+                  
+                  return (
+                    <div key={dept.managerId} className="bg-surface p-md border border-on-surface">
+                      <div className="text-label-bold font-[700] text-on-surface mb-xs">
+                        {dept.managerName}'s Team
+                      </div>
+                      <div className="flex justify-between text-label-sm mb-sm">
+                        <span className="text-on-surface-variant">Q1: {q1Rate}%</span>
+                        <span className="text-on-surface-variant">Q2: {q2Rate}%</span>
+                      </div>
+                      <div className="h-2 w-full border border-on-surface bg-surface-container-high flex">
+                        <div
+                          className="h-full bg-tertiary"
+                          style={{ width: `${q1Rate}%` }}
+                          title={`Q1: ${q1Rate}%`}
+                        />
+                        <div
+                          className="h-full bg-primary"
+                          style={{ width: `${q2Rate}%` }}
+                          title={`Q2: ${q2Rate}%`}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-xs text-label-xs text-on-surface-variant">
+                        <span>Q1</span>
+                        <span className={dept.trends.improvement >= 0 ? "text-primary" : "text-error"}>
+                          {dept.trends.improvement >= 0 ? "+" : ""}{dept.trends.improvement}%
+                        </span>
+                        <span>Q2</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
         <Link

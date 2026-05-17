@@ -7,10 +7,11 @@ import {
   updateSheetStatus,
 } from "@/lib/actions/goal-sheet.actions";
 import { upsertGoals } from "@/lib/actions/goal.actions";
-import { getThrustAreas, getCurrentPhase, submitCheckin, getGoalCheckins, PhaseInfo, GoalCheckin } from "@/lib/actions/admin.actions";
+import { getThrustAreas, getCurrentPhase, PhaseInfo } from "@/lib/actions/admin.actions";
+import { submitQuarterlyCheckin, getCurrentQuarterForEmployee, canSubmitCheckin, getQuarterlyCheckins, getGoalsWithQuarterlyProgressForSheet } from "@/lib/actions/employee.actions";
 import NeoToast from "@/components/feedback/NeoToast";
 import { useToast } from "@/hooks/useToast";
-import type { GoalInsert } from "@/lib/database.types";
+import type { GoalInsert, GoalQuarterlyProgress, QuarterPhase, GoalProgress } from "@/lib/database.types";
 
 /* ─── Types ─── */
 interface GoalRow {
@@ -36,9 +37,11 @@ export default function GoalWorkspace() {
   const [thrustAreas, setThrustAreas] = useState<string[]>([]);
   const [currentPhase, setCurrentPhase] = useState<PhaseInfo | null>(null);
   const [showCheckinModal, setShowCheckinModal] = useState(false);
-  const [checkins, setCheckins] = useState<Record<string, GoalCheckin[]>>({});
+  const [checkins, setCheckins] = useState<Record<string, GoalQuarterlyProgress[]>>({});
   const [checkinForm, setCheckinForm] = useState<Record<string, { actual: string; progress: string }>>({});
   const [submittingCheckin, setSubmittingCheckin] = useState(false);
+  const [quarterlyHistory, setQuarterlyHistory] = useState<Record<string, GoalQuarterlyProgress[]>>({});
+  const [canSubmitQ2, setCanSubmitQ2] = useState<{ allowed: boolean; reason?: string }>({ allowed: true });
   const { toast, showSuccess, showError } = useToast();
 
   useEffect(() => {
@@ -66,6 +69,25 @@ export default function GoalWorkspace() {
         const fullSheet = await getGoalSheet(sheet.id);
 
         setSheetId(fullSheet.id);
+
+        // Load quarterly progress history
+        try {
+          const goalsWithProgress = await getGoalsWithQuarterlyProgressForSheet(fullSheet.id);
+          const historyMap: Record<string, GoalQuarterlyProgress[]> = {};
+          for (const g of goalsWithProgress) {
+            historyMap[g.id] = g.quarterly_progress || [];
+          }
+          setQuarterlyHistory(historyMap);
+
+          // Check if Q2 can be submitted (only during Q2 window)
+          const currentQ = await getCurrentQuarterForEmployee(user.id);
+          if (currentQ === "Q2") {
+            const validation = await canSubmitCheckin(user.id, "Q2");
+            setCanSubmitQ2({ allowed: validation.canSubmit, reason: validation.reason });
+          }
+        } catch (err) {
+          console.warn("Could not load quarterly history:", err);
+        }
         if (fullSheet.goals.length > 0) {
           setRows(
             fullSheet.goals.map((g) => ({
@@ -583,7 +605,13 @@ export default function GoalWorkspace() {
           {/* Check-in Button */}
           <div className="px-lg pb-lg">
             <button
-              onClick={() => setShowCheckinModal(true)}
+              onClick={() => {
+                if (!canSubmitQ2.allowed && currentPhase?.phase === "Q2") {
+                  showError(canSubmitQ2.reason || "Cannot submit check-in");
+                  return;
+                }
+                setShowCheckinModal(true);
+              }}
               className="w-full border-2 border-on-surface bg-tertiary text-on-tertiary p-md text-label-bold font-[700] tracking-[0.05em] flex items-center justify-center gap-sm uppercase shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0px_0px_#000000] transition-all"
             >
               <span className="material-symbols-outlined">analytics</span>
@@ -592,6 +620,11 @@ export default function GoalWorkspace() {
             <p className="text-label-sm text-on-surface-variant text-center mt-xs">
               Current: {currentPhase?.phaseLabel || "Loading..."}
             </p>
+            {!canSubmitQ2.allowed && currentPhase?.phase === "Q2" && (
+              <p className="text-label-sm text-error text-center mt-xs">
+                Prior quarter must be approved first
+              </p>
+            )}
           </div>
         </div>
       </aside>
@@ -664,12 +697,35 @@ export default function GoalWorkspace() {
                 onClick={async () => {
                   setSubmittingCheckin(true);
                   try {
+                    const currentQuarter = currentPhase?.phase as QuarterPhase || "Q1";
+                    const { supabase } = await import("@/lib/supabase/client");
+                    const { data: { user } } = await supabase.auth.getUser();
+                    
+                    if (!user) throw new Error("Not authenticated");
+
                     for (const goal of rows.filter(r => !r.parentGoalId)) {
                       const form = checkinForm[goal.id];
                       if (form?.actual || form?.progress) {
-                        await submitCheckin(goal.id, form.actual || "", form.progress || "not_started");
+                        await submitQuarterlyCheckin(
+                          goal.id,
+                          currentQuarter,
+                          form.actual || "",
+                          (form.progress || "not_started") as GoalProgress,
+                          user.id
+                        );
                       }
                     }
+                    
+                    // Reload quarterly history after submission
+                    if (sheetId) {
+                      const goalsWithProgress = await getGoalsWithQuarterlyProgressForSheet(sheetId);
+                      const historyMap: Record<string, GoalQuarterlyProgress[]> = {};
+                      for (const g of goalsWithProgress) {
+                        historyMap[g.id] = g.quarterly_progress || [];
+                      }
+                      setQuarterlyHistory(historyMap);
+                    }
+                    
                     showSuccess("Check-in submitted successfully!");
                     setShowCheckinModal(false);
                   } catch (err) {
