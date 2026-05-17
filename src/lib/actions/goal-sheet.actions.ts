@@ -17,6 +17,7 @@ import type {
   PerformanceCycle,
   Database,
 } from "@/lib/database.types";
+import { createNotification } from "./notification.actions";
 
 // ─── Fetch active cycle ─────────────────────────────────────
 export async function getActiveCycle() {
@@ -214,6 +215,22 @@ export async function updateSheetStatus(
 ) {
   const db = createAdminClient();
 
+  const { data: sheet, error: fetchErr } = await db
+    .from("goal_sheets")
+    .select("*, employee:profiles(*)")
+    .eq("id", sheetId)
+    .maybeSingle();
+
+  if (fetchErr) {
+    console.error("Sheet fetch error:", fetchErr);
+    throw new Error(`Failed to fetch sheet: ${fetchErr.message}`);
+  }
+
+  if (!sheet) {
+    console.error("Sheet not found for ID:", sheetId);
+    throw new Error(`Sheet ${sheetId} not found`);
+  }
+
   const update: any = { status };
   if (options?.rejectionFeedback !== undefined) {
     update.rejection_feedback = options.rejectionFeedback;
@@ -226,23 +243,28 @@ export async function updateSheetStatus(
     .from("goal_sheets")
     .update(update as Database["public"]["Tables"]["goal_sheets"]["Update"])
     .eq("id", sheetId)
-    .select()
+    .select("*, employee:profiles(*)")
     .maybeSingle();
 
   if (error) throw new Error(`Failed to update sheet status: ${error.message}`);
   if (!data) {
-    // Row was updated but RLS prevented it from being returned, or ID was invalid.
-    // Re-fetch to confirm the update took effect.
-    const { data: refetched } = await db
-      .from("goal_sheets")
-      .select("*")
-      .eq("id", sheetId)
-      .maybeSingle();
-    if (refetched) return refetched;
-    throw new Error(
-      `Sheet ${sheetId} not found or not accessible after status update.`,
-    );
+    throw new Error(`Sheet ${sheetId} not found after update`);
   }
+
+  const sheetEmployee = (sheet as any).employee;
+  if (status === "submitted" && sheetEmployee?.manager_id) {
+    try {
+      await createNotification(
+        sheetEmployee.manager_id,
+        "Goal Sheet Submitted",
+        `${sheetEmployee.full_name} submitted their goal sheet for review.`,
+        `/dashboard/review/${sheetId}`
+      );
+    } catch (e) {
+      console.error("Failed to send notification:", e);
+    }
+  }
+
   return data;
 }
 
@@ -256,6 +278,12 @@ export async function approveSheet(formData: FormData | { sheetId?: string }) {
 
   const db = await createServerClient();
 
+  const { data: sheet } = await db
+    .from("goal_sheets")
+    .select("*, employee:profiles(*)")
+    .eq("id", sheetId)
+    .single();
+
   const { data, error } = await db
     .from("goal_sheets")
     .update({
@@ -267,6 +295,20 @@ export async function approveSheet(formData: FormData | { sheetId?: string }) {
     .maybeSingle();
 
   if (error) throw new Error(`Failed to approve sheet: ${error.message}`);
+
+  if (sheet?.employee_id) {
+    try {
+      await createNotification(
+        sheet.employee_id,
+        "Sheet Approved",
+        "Your goal sheet has been approved.",
+        "/dashboard"
+      );
+    } catch (e) {
+      console.error("Failed to send notification:", e);
+    }
+  }
+
   return data;
 }
 
@@ -285,7 +327,13 @@ export async function rejectSheet(
 
   if (!sheetId) throw new Error("Missing sheetId for rejectSheet");
 
-  const db = await createServerClient();
+  const db = createAdminClient();
+
+  const { data: sheet } = await db
+    .from("goal_sheets")
+    .select("*, employee:profiles(*)")
+    .eq("id", sheetId)
+    .single();
 
   const { data, error } = await db
     .from("goal_sheets")
@@ -298,5 +346,24 @@ export async function rejectSheet(
     .maybeSingle();
 
   if (error) throw new Error(`Failed to reject sheet: ${error.message}`);
+
+  if (sheet?.employee_id) {
+    const feedbackPreview = !rejectionFeedback
+      ? "No feedback provided"
+      : rejectionFeedback.length > 50
+        ? rejectionFeedback.slice(0, 50) + "..."
+        : rejectionFeedback;
+    try {
+      await createNotification(
+        sheet.employee_id,
+        "Sheet Returned",
+        `Your goal sheet was returned for revisions. Feedback: ${feedbackPreview}`,
+        "/dashboard/workspace"
+      );
+    } catch (e) {
+      console.error("Failed to send notification:", e);
+    }
+  }
+
   return data;
 }

@@ -190,9 +190,26 @@ export default function GoalWorkspace() {
             key={row.id}
             className="bg-surface-container-lowest border-2 border-on-surface shadow-[4px_4px_0px_0px_#1b1b1b] hover:shadow-[6px_6px_0px_0px_#1b1b1b] transition-shadow duration-200"
           >
-            <div className="grid grid-cols-1 md:grid-cols-12 flex-1">
-              {/* Thrust Area */}
-              <div className="md:col-span-3 border-b md:border-b-0 md:border-r border-on-surface p-md bg-surface-bright flex flex-col">
+            {/* Row 1: Title + Description (all screens) / Title + Thrust + Description + Metrics (2xl+) */}
+            <div className="3xl:grid 3xl:grid-cols-12 flex flex-col">
+              {/* Title */}
+              <div className="3xl:col-span-3 border-b-2 3xl:border-b-0 3xl:border-r border-on-surface p-md flex flex-col">
+                <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase mb-sm text-[10px]">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={row.title}
+                  onChange={(e) =>
+                    updateRow(row.id, "title", e.target.value)
+                  }
+                  className="w-full flex-1 min-h-[48px] bg-transparent border border-on-surface text-body-md font-[700] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm rounded-none placeholder:text-on-surface-variant"
+                  placeholder="Goal title..."
+                />
+              </div>
+
+              {/* Thrust Area - only on 2xl, otherwise in row 2 */}
+              <div className="hidden 3xl:flex 3xl:col-span-2 border-b-2 3xl:border-b-0 3xl:border-r border-on-surface p-md bg-surface-bright flex flex-col">
                 <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase mb-sm text-[10px]">
                   Thrust Area
                 </label>
@@ -215,7 +232,7 @@ export default function GoalWorkspace() {
               </div>
 
               {/* Description */}
-              <div className="md:col-span-5 border-b md:border-b-0 md:border-r border-on-surface p-md flex flex-col">
+              <div className="3xl:col-span-4 border-b-2 3xl:border-b-0 3xl:border-r border-on-surface p-md flex flex-col">
                 <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase mb-sm text-[10px]">
                   Objective Description
                 </label>
@@ -229,8 +246,8 @@ export default function GoalWorkspace() {
                 />
               </div>
 
-              {/* Metrics Cluster */}
-              <div className="md:col-span-4 grid grid-cols-3">
+              {/* Metrics Cluster - only on 2xl */}
+              <div className="hidden 3xl:grid 3xl:col-span-3 grid-cols-3">
                 {/* Unit */}
                 <div className="col-span-1 border-r border-on-surface p-md flex flex-col bg-surface-bright">
                   <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase mb-sm text-[10px]">
@@ -296,6 +313,100 @@ export default function GoalWorkspace() {
                 </div>
               </div>
             </div>
+
+            {/* Row 2: Thrust Area + Metrics (only on screens smaller than 2xl) */}
+            <div className="3xl:hidden grid grid-cols-2">
+              {/* Thrust Area */}
+              <div className="col-span-1 border-r border-b border-on-surface p-md bg-surface-bright flex flex-col">
+                <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase mb-sm text-[10px]">
+                  Thrust Area
+                </label>
+                <div className="relative flex-1">
+                  <select
+                    value={row.thrustArea}
+                    onChange={(e) =>
+                      updateRow(row.id, "thrustArea", e.target.value)
+                    }
+                    className="w-full h-full min-h-[48px] bg-transparent border border-on-surface text-body-md font-[400] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm appearance-none rounded-none cursor-pointer"
+                  >
+                    {THRUST_AREAS.map((area) => (
+                      <option key={area}>{area}</option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 pointer-events-none text-on-surface">
+                    arrow_drop_down
+                  </span>
+                </div>
+              </div>
+
+              {/* Metrics: Unit + Target + Weight */}
+              <div className="col-span-1 grid grid-cols-3 border-b border-on-surface">
+                {/* Unit */}
+                <div className="col-span-1 border-r border-on-surface p-md flex flex-col bg-surface-bright">
+                  <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase mb-sm text-[10px]">
+                    Unit
+                  </label>
+                  <div className="relative flex-1">
+                    <select
+                      value={row.unit}
+                      onChange={(e) => updateRow(row.id, "unit", e.target.value)}
+                      className="w-full h-full min-h-[48px] bg-transparent border border-on-surface text-label-bold font-[700] tracking-[0.05em] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm appearance-none rounded-none cursor-pointer"
+                    >
+                      <optgroup label="Min">
+                        <option value="numeric_min">Num</option>
+                        <option value="percentage_min">%</option>
+                      </optgroup>
+                      <optgroup label="Max">
+                        <option value="numeric_max">Num</option>
+                        <option value="percentage_max">%</option>
+                      </optgroup>
+                      <option value="timeline">Time</option>
+                      <option value="zero_based">Zero</option>
+                    </select>
+                    <span className="material-symbols-outlined absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface text-[16px]">
+                      arrow_drop_down
+                    </span>
+                  </div>
+                </div>
+                {/* Target */}
+                <div className="col-span-1 border-r border-on-surface p-md flex flex-col bg-surface">
+                  <label className="text-label-bold font-[700] tracking-[0.05em] text-on-surface uppercase mb-sm text-[10px]">
+                    Target
+                  </label>
+                  <input
+                    type="number"
+                    value={row.target}
+                    onChange={(e) =>
+                      updateRow(row.id, "target", e.target.value)
+                    }
+                    className="w-full flex-1 bg-transparent border border-on-surface text-headline-md font-[700] text-on-surface focus:ring-0 focus:border-2 focus:border-primary p-sm text-center rounded-none"
+                  />
+                </div>
+                {/* Weight */}
+                <div className="col-span-1 p-md flex flex-col bg-primary-container/10">
+                  <label className="text-label-bold font-[700] tracking-[0.05em] text-primary uppercase mb-sm text-[10px]">
+                    Weight %
+                  </label>
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min={10}
+                      max={100}
+                      value={row.weightage}
+                      onChange={(e) =>
+                        updateRow(
+                          row.id,
+                          "weightage",
+                          parseInt(e.target.value) || 0,
+                        )
+                      }
+                      className="w-full h-full bg-surface-container-lowest border-2 border-primary text-headline-md font-[700] text-primary focus:ring-0 p-sm text-center rounded-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Row actions (mobile delete) */}
             {rows.length > 1 && (
               <div className="border-t border-on-surface p-sm flex justify-end">

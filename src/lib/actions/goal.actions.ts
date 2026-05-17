@@ -6,6 +6,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { createServerClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { PostgrestSingleResponse } from "@supabase/supabase-js";
 import type { GoalInsert, GoalUpdate, Goal, Database } from "@/lib/database.types";
 
@@ -55,10 +56,12 @@ export async function upsertGoals(
         .update(payload as Database["public"]["Tables"]["goals"]["Update"])
         .eq("id", id)
         .select()
-        .single();
+        .maybeSingle();
       if (error)
         throw new Error(`Failed to update goal ${id}: ${error.message}`);
-      results.push(data!);
+      if (!data)
+        throw new Error(`Goal ${id} not found`);
+      results.push(data);
     } else {
       const { data, error } = await db
         .from("goals")
@@ -105,9 +108,9 @@ export async function updateGoalActuals(
   actualAchievement: string,
   progressStatus: "not_started" | "on_track" | "completed",
 ): Promise<Goal> {
-  const db = await createServerClient();
+  const db = createAdminClient();
 
-  const { data, error } = await db
+const { data, error } = await db
     .from("goals")
     .update({
       actual_achievement: actualAchievement,
@@ -115,10 +118,11 @@ export async function updateGoalActuals(
     } as Database["public"]["Tables"]["goals"]["Update"])
     .eq("id", goalId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw new Error(`Failed to update actuals: ${error.message}`);
-  return data!;
+  if (!data) throw new Error(`Goal ${goalId} not found or not accessible`);
+  return data;
 }
 
 // ─── Distribute a shared KPI to multiple employees ─────────

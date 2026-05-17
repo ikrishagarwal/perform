@@ -104,6 +104,16 @@ export interface AuditLog {
   created_at: string;
 }
 
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  target_url: string | null;
+  created_at: string;
+}
+
 // ─── Insert / Update DTOs ───────────────────────────────────
 
 export type GoalInsert = Omit<Goal, "id" | "created_at" | "updated_at">;

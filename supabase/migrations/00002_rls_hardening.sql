@@ -32,7 +32,7 @@ CREATE POLICY goals_update_employee ON public.goals
       SELECT 1 FROM public.goal_sheets gs
       WHERE gs.id = goal_sheet_id
         AND gs.employee_id = auth.uid()
-        AND gs.status IN ('draft', 'locked')
+        AND gs.status IN ('draft', 'locked', 'submitted')
     )
   )
   WITH CHECK (
@@ -40,7 +40,7 @@ CREATE POLICY goals_update_employee ON public.goals
       SELECT 1 FROM public.goal_sheets gs
       WHERE gs.id = goal_sheet_id
         AND gs.employee_id = auth.uid()
-        AND gs.status IN ('draft', 'locked')
+        AND gs.status IN ('draft', 'locked', 'submitted')
     )
   );
 

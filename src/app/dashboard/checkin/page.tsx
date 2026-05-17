@@ -7,6 +7,7 @@ import {
   getGoalSheet,
 } from "@/lib/actions/goal-sheet.actions";
 import { updateGoalActuals } from "@/lib/actions/goal.actions";
+import { createNotification } from "@/lib/actions/notification.actions";
 import NeoToast from "@/components/feedback/NeoToast";
 import { useToast } from "@/hooks/useToast";
 import type { Goal } from "@/lib/database.types";
@@ -19,6 +20,8 @@ export default function PerformanceCheckin() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sheetId, setSheetId] = useState<string>("");
+  const [managerId, setManagerId] = useState<string | null>(null);
+  const [employeeName, setEmployeeName] = useState<string>("");
   const [expandedEvidence, setExpandedEvidence] = useState<Record<string, boolean>>({});
   const { toast, showSuccess, showError } = useToast();
 
@@ -36,11 +39,19 @@ export default function PerformanceCheckin() {
 
         if (!user) return;
 
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, manager_id")
+          .eq("id", user.id)
+          .single() as { data: { full_name: string; manager_id: string | null } | null, error: null };
+
         const sheet = await getOrCreateMySheet(user.id);
         const fullSheet = await getGoalSheet(sheet.id);
 
         setSheetId(fullSheet.id);
         setGoals(fullSheet.goals);
+        setManagerId(profile?.manager_id ?? null);
+        setEmployeeName(profile?.full_name ?? "Employee");
 
         const init: Record<string, string> = {};
         fullSheet.goals.forEach((g) => {
@@ -80,6 +91,20 @@ export default function PerformanceCheckin() {
           await updateGoalActuals(goal.id, actual, status);
         }
       }
+
+      if (managerId) {
+        try {
+          await createNotification(
+            managerId,
+            "Check-in Submitted",
+            `${employeeName} submitted their quarterly check-in.`,
+            "/dashboard/checkin"
+          );
+        } catch (e) {
+          console.error("Failed to send notification:", e);
+        }
+      }
+
       showSuccess("Check-in saved successfully!");
     } catch (err) {
       console.error(err);
@@ -244,7 +269,7 @@ export default function PerformanceCheckin() {
                 return `$${(val / 1000000).toFixed(1)}M`;
               }
               if (goal.uom === "numeric_max") {
-                return `${goal.target_value}ms`;
+                return `${goal.target_value}`;
               }
               return goal.target_value;
             })();
@@ -343,11 +368,7 @@ export default function PerformanceCheckin() {
                             %
                           </span>
                         )}
-                        {goal.uom === "numeric_max" && (
-                          <span className="absolute right-sm top-1/2 -translate-y-1/2 text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant">
-                            ms
-                          </span>
-                        )}
+                        
                       </div>
                     </div>
                   </div>

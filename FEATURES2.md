@@ -14,7 +14,7 @@
 | :--------- | :--------------------------------------- | :--------------- | :---------------------------------------------------------------------------------------------------------- |
 | **6.1**    | Secure Evidence Upload Pipeline         | ✅ **100% DONE** | Migration applied, storage bucket created, upload flow active.                                              |
 | **6.2**    | Managerial Asset Verification Interface | ✅ **100% DONE** | Evidence viewer integrated into manager review page with preview/download.                                 |
-| **7.1**    | Persistent In-App Notification Center   | ❌ **NOT STARTED** | Database table + frontend UI component pending.                                                            |
+| **7.1**    | Persistent In-App Notification Center   | ✅ **100% DONE** | Notification table + Bell component + triggers in goal-sheet actions.                                     |
 | **7.2**    | SLA-Driven Escalation Engine             | ❌ **NOT STARTED** | Cron job and escalation logic pending.                                                                     |
 | **8.1**    | High-Density Business Intelligence      | ❌ **NOT STARTED** | Visualization library integration + treemap/bar/pie charts pending.                                       |
 | **8.2**    | Interactive Departmental Drilldowns     | ❌ **NOT STARTED** | Hierarchical state machine for drilldown filters pending.                                                   |
@@ -57,30 +57,24 @@
 
 ### Feature 7.1: Persistent In-App Notification Center
 
-- **Status**: ❌ **NOT STARTED**
+- **Status**: ✅ **100% IMPLEMENTED**
 - **Functional Description**: Replaces external email dispatches with an isolated, secure transactional notification feed built directly into the web portal navigation layout. Users can track all system events, status modifications, and operational feedback natively.
 - **Technical Requirements**:
-  - **Database Architecture**: Provision a new table `public.notifications` with the following structural layout:
-
-```sql
-CREATE TABLE public.notifications (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  message TEXT NOT NULL,
-  is_read BOOLEAN DEFAULT FALSE NOT NULL,
-  target_url TEXT, -- Dynamic internal deep-linking route
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-);
-CREATE INDEX idx_notifications_user_unread ON public.notifications(user_id) WHERE is_read = FALSE;
-
-```
-
-  - **Workflow Pipeline Actions**:
-    - **Trigger Step A (Submission)**: When an employee executes a goal sheet submission, inject an atomic server action entry targeting the assigned `manager_id` profile with a `target_url` mapped to `/dashboard/review/[sheetId]`.
-    - **Trigger Step B (Evaluation)**: When a manager invokes `approveSheet` or `rejectSheet`, commit a record targeting the employee's `profile_id` containing the status update summary and any written markdown review feedback text.
-
-  - **Frontend Navigation Elements**: Create a global `<NotificationBell />` popover navigation layout component within the core dashboard shell layout. This component must fetch unread metrics, display custom toast alerts upon new events, order data rows sequentially by `created_at DESC`, and feature a "Mark all as read" API interaction trigger.
+  - ✅ Created `public.notifications` table with RLS policies.
+  - ✅ Implemented server actions: `createNotification`, `getNotifications`, `getUnreadCount`, `markAsRead`, `markAllAsRead`.
+  - ✅ Created `<NotificationBell />` component in dashboard sidebar with unread count badge, dropdown list, and "Mark all as read" functionality.
+  - ✅ Added notification triggers:
+    - **Goal Sheet Submission**: Sends notification to manager when employee submits sheet.
+    - **Goal Sheet Approval**: Sends notification to employee when manager approves sheet.
+    - **Goal Sheet Rejection**: Sends notification to employee when manager rejects sheet.
+    - **Check-in Submission**: Sends notification to manager when employee submits quarterly check-in.
+- **Implementation Files**:
+  - `supabase/migrations/00005_notifications.sql` — Table schema + RLS policies
+  - `src/lib/database.types.ts` — Added `Notification` interface
+  - `src/lib/actions/notification.actions.ts` — All server actions
+  - `src/components/notifications/NotificationBell.tsx` — Bell component with dropdown
+  - `src/app/dashboard/DashboardClientShell.tsx` — Integrated Bell in sidebar header
+  - `src/lib/actions/goal-sheet.actions.ts` — Added notification triggers in `updateSheetStatus`, `approveSheet`, `rejectSheet`
 
 ### Feature 7.2: SLA-Driven Escalation Engine
 

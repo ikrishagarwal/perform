@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Profile } from "@/lib/database.types";
 import { logout } from "@/app/login/actions";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 const getNavItems = (role?: string) => {
   const items = [
@@ -29,13 +30,16 @@ function Sidebar({ currentUser }: { currentUser: Profile | null }) {
   return (
     <nav className="hidden md:flex flex-col h-screen w-64 bg-surface fixed left-0 top-0 border-r-2 border-on-surface z-50">
       {/* Header */}
-      <div className="flex flex-col gap-sm border-b-2 border-on-surface p-md bg-surface-container-lowest">
-        <h1 className="text-headline-md font-[800] text-on-surface">
-          Track Progress
-        </h1>
-        <p className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant">
-          Q4 Cycle Active
-        </p>
+      <div className="flex flex-row items-center justify-between gap-sm border-b-2 border-on-surface p-md bg-surface-container-lowest">
+        <div className="flex flex-col gap-xs">
+          <h1 className="text-headline-md font-[800] text-on-surface">
+            Track Progress
+          </h1>
+          <p className="text-label-bold font-[700] tracking-[0.05em] text-on-surface-variant">
+            Q4 Cycle Active
+          </p>
+        </div>
+        {currentUser && <NotificationBell userId={currentUser.id} />}
       </div>
 
       {/* Scrollable Navigation */}
