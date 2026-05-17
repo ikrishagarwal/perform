@@ -1,5 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import DashboardClientShell from "./DashboardClientShell";
+import PersonaBar from "@/components/PersonaBar";
+import { AppRole } from "@/lib/database.types";
 
 export default async function DashboardLayout({
   children,

@@ -1,5 +1,5 @@
 "use server";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 /* ─────────────────────────────────────────────────────────────
    goal.actions.ts — Server Actions for individual Goal CRUD
@@ -13,10 +13,11 @@ import type { GoalInsert, GoalUpdate, Goal, Database } from "@/lib/database.type
 export async function createGoal(goal: GoalInsert): Promise<Goal> {
   const db = await createServerClient();
 
-  const { data, error } = (await (db.from("goals") as any)
+  const { data, error } = await db
+    .from("goals")
     .insert(goal as Database["public"]["Tables"]["goals"]["Insert"])
     .select()
-    .single()) as PostgrestSingleResponse<Goal>;
+    .single();
 
   if (error) throw new Error(`Failed to create goal: ${error.message}`);
   return data!;
@@ -32,13 +33,14 @@ export async function upsertGoals(
   // Delete any existing goals that are no longer in the payload
   const incomingIds = goals.filter((g) => g.id).map((g) => g.id!);
   if (incomingIds.length > 0) {
-    await (db.from("goals") as any)
+    await db
+      .from("goals")
       .delete()
       .eq("goal_sheet_id", sheetId)
       .not("id", "in", `(${incomingIds.join(",")})`);
   } else {
     // All new — clear old goals
-    await (db.from("goals") as any).delete().eq("goal_sheet_id", sheetId);
+    await db.from("goals").delete().eq("goal_sheet_id", sheetId);
   }
 
   // Upsert each goal with sort_order
@@ -48,19 +50,21 @@ export async function upsertGoals(
     const payload = { ...fields, goal_sheet_id: sheetId, sort_order: i };
 
     if (id) {
-      const { data, error } = (await (db.from("goals") as any)
+      const { data, error } = await db
+        .from("goals")
         .update(payload as Database["public"]["Tables"]["goals"]["Update"])
         .eq("id", id)
         .select()
-        .single()) as PostgrestSingleResponse<Goal>;
+        .single();
       if (error)
         throw new Error(`Failed to update goal ${id}: ${error.message}`);
       results.push(data!);
     } else {
-      const { data, error } = (await (db.from("goals") as any)
+      const { data, error } = await db
+        .from("goals")
         .insert(payload as Database["public"]["Tables"]["goals"]["Insert"])
         .select()
-        .single()) as PostgrestSingleResponse<Goal>;
+        .single();
       if (error) throw new Error(`Failed to insert goal: ${error.message}`);
       results.push(data!);
     }
@@ -76,11 +80,12 @@ export async function updateGoal(
 ): Promise<Goal> {
   const db = await createServerClient();
 
-  const { data, error } = (await (db.from("goals") as any)
+  const { data, error } = await db
+    .from("goals")
     .update(updates as Database["public"]["Tables"]["goals"]["Update"])
     .eq("id", goalId)
     .select()
-    .single()) as PostgrestSingleResponse<Goal>;
+    .single();
 
   if (error) throw new Error(`Failed to update goal: ${error.message}`);
   return data!;
@@ -90,7 +95,7 @@ export async function updateGoal(
 export async function deleteGoal(goalId: string) {
   const db = await createServerClient();
 
-  const { error } = await (db.from("goals") as any).delete().eq("id", goalId);
+  const { error } = await db.from("goals").delete().eq("id", goalId);
   if (error) throw new Error(`Failed to delete goal: ${error.message}`);
 }
 
@@ -102,14 +107,15 @@ export async function updateGoalActuals(
 ): Promise<Goal> {
   const db = await createServerClient();
 
-  const { data, error } = (await (db.from("goals") as any)
+  const { data, error } = await db
+    .from("goals")
     .update({
       actual_achievement: actualAchievement,
       progress_status: progressStatus,
     } as Database["public"]["Tables"]["goals"]["Update"])
     .eq("id", goalId)
     .select()
-    .single()) as PostgrestSingleResponse<Goal>;
+    .single();
 
   if (error) throw new Error(`Failed to update actuals: ${error.message}`);
   return data!;
@@ -123,10 +129,11 @@ export async function distributeSharedGoal(
   const db = await createServerClient();
 
   // 1. Create the parent goal (on the admin/manager's own sheet or a sentinel sheet)
-  const { data: parent, error: parentErr } = (await (db.from("goals") as any)
+  const { data: parent, error: parentErr } = await db
+    .from("goals")
     .insert(parentGoal as Database["public"]["Tables"]["goals"]["Insert"])
     .select()
-    .single()) as PostgrestSingleResponse<Goal>;
+    .single();
 
   if (parentErr)
     throw new Error(`Failed to create parent goal: ${parentErr.message}`);
@@ -150,10 +157,11 @@ export async function distributeSharedGoal(
       sort_order: 99, // appended at end
     };
 
-    const { data, error } = (await (db.from("goals") as any)
+    const { data, error } = await db
+      .from("goals")
       .insert(child as Database["public"]["Tables"]["goals"]["Insert"])
       .select()
-      .single()) as PostgrestSingleResponse<Goal>;
+      .single();
 
     if (error)
       throw new Error(

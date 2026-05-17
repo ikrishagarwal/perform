@@ -3,7 +3,7 @@
 /* ─────────────────────────────────────────────────────────────
    goal-sheet.actions.ts — Server Actions for Goal Sheet CRUD
    ───────────────────────────────────────────────────────────── */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -40,13 +40,15 @@ export async function getGoalSheet(
   }
   const db = await createServerClient();
 
-  const { data: sheet, error: sheetErr } = (await (db.from("goal_sheets") as any)
+  const { data: sheet, error: sheetErr } = await db
+    .from("goal_sheets")
     .select("*")
     .eq("id", sheetId)
-    .single()) as PostgrestSingleResponse<GoalSheet>;
+    .single();
   if (sheetErr) throw new Error(`Sheet not found: ${sheetErr.message}`);
 
-  const { data: goals, error: goalsErr } = await (db.from("goals") as any)
+  const { data: goals, error: goalsErr } = await db
+    .from("goals")
     .select("*")
     .eq("goal_sheet_id", sheetId)
     .order("sort_order", { ascending: true });
@@ -63,22 +65,24 @@ export async function getOrCreateMySheet(
   const cycle = await getActiveCycle();
 
   // Try to find existing sheet
-  const { data: existing } = (await (db.from("goal_sheets") as any)
+  const { data: existing } = await db
+    .from("goal_sheets")
     .select("*")
     .eq("employee_id", employeeId)
     .eq("cycle_id", cycle.id)
-    .maybeSingle()) as PostgrestSingleResponse<GoalSheet>;
+    .maybeSingle();
 
   if (existing) return existing;
 
   // Create new sheet
-  const { data: created, error } = (await (db.from("goal_sheets") as any)
+  const { data: created, error } = await db
+    .from("goal_sheets")
     .insert({
       employee_id: employeeId,
       cycle_id: cycle.id,
     } as Database["public"]["Tables"]["goal_sheets"]["Insert"])
     .select()
-    .single()) as PostgrestSingleResponse<GoalSheet>;
+    .single();
 
   if (error) throw new Error(`Failed to create goal sheet: ${error.message}`);
   if (!created) throw new Error("Failed to create goal sheet: No data returned");
@@ -91,7 +95,8 @@ export async function getSheetsByCycle(
 ): Promise<GoalSheetWithGoals[]> {
   const db = await createServerClient();
 
-  const { data: sheets, error } = await (db.from("goal_sheets") as any)
+  const { data: sheets, error } = await db
+    .from("goal_sheets")
     .select("*")
     .eq("cycle_id", cycleId)
     .order("created_at", { ascending: true });
@@ -99,11 +104,12 @@ export async function getSheetsByCycle(
   if (error) throw new Error(`Failed to fetch sheets: ${error.message}`);
   if (!sheets) return [];
 
-  const sheetsArr = sheets as GoalSheet[];
+  const sheetsArr = sheets;
 
   // Batch-fetch all goals for these sheets
   const sheetIds = sheetsArr.map((s) => s.id);
-  const { data: allGoals } = await (db.from("goals") as any)
+  const { data: allGoals } = await db
+    .from("goals")
     .select("*")
     .in("goal_sheet_id", sheetIds)
     .order("sort_order", { ascending: true });
@@ -129,11 +135,11 @@ export async function getTeamSheets(
   const cycle = await getActiveCycle();
 
   // 1. Determine which employees to fetch
-  const { data: callerProfile } = (await db
+  const { data: callerProfile } = await db
     .from("profiles")
     .select("role")
     .eq("id", callerId)
-    .single()) as PostgrestSingleResponse<Profile>;
+    .single();
 
   const profile = callerProfile;
 
@@ -158,7 +164,8 @@ export async function getTeamSheets(
   if (reportIds.length === 0) return [];
 
   // 2. Fetch sheets for those employees
-  const { data: sheets, error } = await (db.from("goal_sheets") as any)
+  const { data: sheets, error } = await db
+    .from("goal_sheets")
     .select("*")
     .eq("cycle_id", cycle.id)
     .in("employee_id", reportIds)
@@ -167,12 +174,13 @@ export async function getTeamSheets(
   if (error) throw new Error(`Failed to fetch team sheets: ${error.message}`);
   if (!sheets) return [];
 
-  const sheetsArr = sheets as GoalSheet[];
+  const sheetsArr = sheets;
 
   // 3. Attach goals + employee profiles
   const sheetIds = sheetsArr.map((s) => s.id);
   const [{ data: allGoals }, { data: profiles }] = await Promise.all([
-    (db.from("goals") as any)
+    db
+      .from("goals")
       .select("*")
       .in("goal_sheet_id", sheetIds)
       .order("sort_order", { ascending: true }),
@@ -214,21 +222,22 @@ export async function updateSheetStatus(
     update.approved_by = options.approvedBy;
   }
 
-  const { data, error } = (await (db.from("goal_sheets") as any)
+  const { data, error } = await db
+    .from("goal_sheets")
     .update(update as Database["public"]["Tables"]["goal_sheets"]["Update"])
     .eq("id", sheetId)
     .select()
-    .maybeSingle()) as PostgrestSingleResponse<GoalSheet>;
+    .maybeSingle();
 
   if (error) throw new Error(`Failed to update sheet status: ${error.message}`);
   if (!data) {
     // Row was updated but RLS prevented it from being returned, or ID was invalid.
     // Re-fetch to confirm the update took effect.
-    const { data: refetched } = (await db
+    const { data: refetched } = await db
       .from("goal_sheets")
       .select("*")
       .eq("id", sheetId)
-      .maybeSingle()) as PostgrestSingleResponse<GoalSheet>;
+      .maybeSingle();
     if (refetched) return refetched;
     throw new Error(
       `Sheet ${sheetId} not found or not accessible after status update.`,
@@ -247,14 +256,15 @@ export async function approveSheet(formData: FormData | { sheetId?: string }) {
 
   const db = await createServerClient();
 
-  const { data, error } = (await (db.from("goal_sheets") as any)
+  const { data, error } = await db
+    .from("goal_sheets")
     .update({
       status: "locked",
       approved_at: new Date().toISOString(),
     } as Database["public"]["Tables"]["goal_sheets"]["Update"])
     .eq("id", sheetId)
     .select()
-    .maybeSingle()) as PostgrestSingleResponse<GoalSheet>;
+    .maybeSingle();
 
   if (error) throw new Error(`Failed to approve sheet: ${error.message}`);
   return data;
@@ -277,14 +287,15 @@ export async function rejectSheet(
 
   const db = await createServerClient();
 
-  const { data, error } = (await (db.from("goal_sheets") as any)
+  const { data, error } = await db
+    .from("goal_sheets")
     .update({
       status: "draft",
       rejection_feedback: rejectionFeedback,
     } as Database["public"]["Tables"]["goal_sheets"]["Update"])
     .eq("id", sheetId)
     .select()
-    .maybeSingle()) as PostgrestSingleResponse<GoalSheet>;
+    .maybeSingle();
 
   if (error) throw new Error(`Failed to reject sheet: ${error.message}`);
   return data;

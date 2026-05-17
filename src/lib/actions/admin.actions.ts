@@ -1,5 +1,5 @@
 "use server";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 /* ─────────────────────────────────────────────────────────────
    admin.actions.ts — Server Actions for Admin/HR operations
@@ -44,11 +44,12 @@ export async function getAuditLogs(filters?: {
 export async function adminUnlockSheet(sheetId: string) {
   const db = await createServerClient();
 
-  const { data, error } = (await (db.from("goal_sheets") as any)
+  const { data, error } = await db
+    .from("goal_sheets")
     .update({ status: "draft" })
     .eq("id", sheetId)
     .select()
-    .single()) as PostgrestSingleResponse<GoalSheet>;
+    .single();
 
   if (error) throw new Error(`Failed to unlock sheet: ${error.message}`);
   return data;
@@ -62,19 +63,21 @@ export async function upsertPerformanceCycle(
 
   if (cycle.id) {
     const { id, ...rest } = cycle;
-    const { data, error } = (await (db.from("performance_cycles") as any)
+    const { data, error } = await db
+      .from("performance_cycles")
       .update(rest)
       .eq("id", id)
       .select()
-      .single()) as PostgrestSingleResponse<PerformanceCycle>;
+      .single();
     if (error) throw new Error(`Failed to update cycle: ${error.message}`);
     return data;
   }
 
-  const { data, error } = (await (db.from("performance_cycles") as any)
+  const { data, error } = await db
+    .from("performance_cycles")
     .insert(cycle as Database["public"]["Tables"]["performance_cycles"]["Insert"])
     .select()
-    .single()) as PostgrestSingleResponse<PerformanceCycle>;
+    .single();
   if (error) throw new Error(`Failed to create cycle: ${error.message}`);
   return data;
 }
@@ -108,7 +111,8 @@ export async function exportGoalDataCsv(cycleId: string): Promise<string> {
   const empIds = sheetsArr.map((s) => s.employee_id);
 
   const [{ data: goals }, { data: profiles }] = await Promise.all([
-    (db.from("goals") as any)
+    db
+      .from("goals")
       .select("*")
       .in("goal_sheet_id", sheetIds)
       .order("sort_order"),
@@ -185,6 +189,15 @@ export async function getComplianceMetrics(cycleId: string) {
   const draft = sheetsArr.filter((s) => s.status === "draft").length;
   const notStarted = total - sheetsArr.length;
 
+  const thrustAreaCounts: Record<string, number> = {};
+  const [{ data: allGoals }] = await Promise.all([
+    db.from("goals").select("thrust_area").in("goal_sheet_id", sheetsArr.map(s => s.id))
+  ]);
+
+  (allGoals as { thrust_area: string }[])?.forEach(g => {
+    thrustAreaCounts[g.thrust_area] = (thrustAreaCounts[g.thrust_area] || 0) + 1;
+  });
+
   return {
     totalEmployees: total,
     sheetsCreated: sheetsArr.length,
@@ -195,5 +208,6 @@ export async function getComplianceMetrics(cycleId: string) {
     notStarted,
     submissionRate: total > 0 ? Math.round((submitted / total) * 100) : 0,
     approvalRate: total > 0 ? Math.round((approved / total) * 100) : 0,
+    thrustAreaBreakdown: thrustAreaCounts,
   };
 }

@@ -8,23 +8,23 @@
 
 ---
 
-## 🚀 FEATURE IMPLEMENTATION STATUS (Audit Date: May 16, 2026)
+## 🚀 FEATURE IMPLEMENTATION STATUS (Audit Date: May 17, 2026)
 
 | Feature ID | Feature Name                             | Status           | Summary of Remaining Work                                                                                   |
 | :--------- | :--------------------------------------- | :--------------- | :---------------------------------------------------------------------------------------------------------- |
-| **1.1**    | Multi-Tenant RBAC Routing Gateway        | 🟡 **PARTIAL**   | Middleware handles auth but needs explicit redirection to role-specific sub-routes.                         |
-| **1.2**    | Interactive Multi-Persona Switcher       | ❌ **PENDING**   | Dev toolbar for rapid role swapping is not yet implemented.                                                 |
+| **1.1**    | Multi-Tenant RBAC Routing Gateway        | ✅ **100% DONE** | Role-based path protection and redirection fully enforced in Middleware.                                    |
+| **1.2**    | Interactive Multi-Persona Switcher       | ❌ **WON'T IMPLEMENT** | Out of scope; login-based approach is used instead.                         |
 | **2.1**    | Dynamic Goal Sheet Composition Workplace | ✅ **100% DONE** | Full CRUD workspace with linear data grid implemented.                                                      |
 | **2.2**    | Real-Time Constraint Validation Engine   | ✅ **100% DONE** | 8-goal cap, 10% min weight, 100% total sum enforced via UI and DB Triggers.                                 |
-| **2.3**    | Shared Departmental KPI Distribution     | 🟡 **PARTIAL**   | DB sync logic and Server Actions exist; Admin UI for distribution is missing.                               |
+| **2.3**    | Shared Departmental KPI Distribution     | ✅ **100% DONE** | Admin UI for global goal distribution implemented in Admin Hub.                                             |
 | **3.1**    | Team Compliance Dashboard View           | ✅ **100% DONE** | Manager-facing grid with report statuses and completion tracking is active.                                 |
-| **3.2**    | Inline Modification & Approval View      | ✅ **100% DONE** | Manager review detail page with approve/reject actions, feedback capture, and confirmation modal is active. |
+| **3.2**    | Inline Modification & Approval View      | ✅ **100% DONE** | Manager review detail page with approve/reject actions and inline goal editing is active.                   |
 | **4.1**    | Quarterly Progress Capture Portal        | ✅ **100% DONE** | Check-in interface for actuals entry and status updates is fully functional.                                |
 | **4.2**    | Programmatic Score Calculation Engine    | ✅ **100% DONE** | Formulas for Numeric Min/Max, Timeline, and Zero-Based are implemented in `progress-engine.ts`.             |
 | **4.3**    | Shared Goal Real-Time Cascading Sync     | ✅ **100% DONE** | Database trigger `tg_cascade_shared_goals` automatically syncs parent to child actuals.                     |
 | **5.1**    | Immutable Post-Lock Change Ledger        | ✅ **100% DONE** | Database trigger `tg_audit_locked_mutations` captures diffs on locked records to `audit_logs`.              |
 | **5.2**    | Admin Overrides & Unlock Control         | ✅ **100% DONE** | Admin Hub now supports force unlock with confirmation modal and toast feedback.                             |
-| **5.3**    | Global Compliance & Data Export          | 🟡 **PARTIAL**   | CSV export is implemented via Admin Hub; compliance heatmap visualizations remain pending.                  |
+| **5.3**    | Global Compliance & Data Export          | ✅ **100% DONE** | CSV export and real-time compliance/thrust-area visualizations active in Admin Hub.                         |
 
 ---
 
@@ -32,7 +32,7 @@
 
 ### Feature 1.1: Multi-Tenant RBAC Routing Gateway
 
-- **Status**: 🟡 **PARTIALLY IMPLEMENTED**
+- **Status**: ✅ **100% IMPLEMENTED**
 - **Functional Description**: A unified, high-contrast entry login portal that securely segmentations traffic based on organizational security context.
 - **Technical Requirements**:
   - Authenticate user credentials securely via Supabase Auth services.
@@ -42,12 +42,12 @@
 
 ### Feature 1.2: Interactive Multi-Persona Switcher (Dev Mode Toolbar)
 
-- **Status**: ❌ **NOT IMPLEMENTED** (Won't be implemented)
-- **Functional Description**: A fixed developer environment visual toolbar that allows hackathon evaluators to toggle between user journeys instantly without logging out.
+- **Status**: ❌ **WON'T IMPLEMENT**
+- **Functional Description**: A fixed developer environment visual toolbar was considered but ultimately removed in favor of a standard login-based approach for role switching to maintain security parity between environments.
 - **Technical Requirements**:
-  - Render a fixed layout panel anchored to the viewport baseline using raw black borders (`1px solid #000000`) and a flat layout depth offset (`4px 4px 0px 0px #000000`).
-  - Expose explicit, single-click buttons to dynamically re-scope the active app session metadata context to `Employee`, `Manager`, or `Admin`.
-  - Use state management to simulate client-side context overrides, updating application views dynamically to match the selected role without forcing a full cache refresh or losing app data state.
+  - [DE-SCOPED] Render a fixed layout panel anchored to the viewport baseline using raw black borders.
+  - [DE-SCOPED] Expose explicit, single-click buttons to dynamically re-scope the active app session.
+  - [DE-SCOPED] Use state management to simulate client-side context overrides.
 
 ---
 
@@ -74,10 +74,10 @@
 
 ### Feature 2.3: Shared Departmental KPI Distribution Engine
 
-- **Status**: 🟡 **PARTIALLY IMPLEMENTED**
+- **Status**: ✅ **100% IMPLEMENTED**
 - **Functional Description**: Allows administrators or direct managers to broadcast foundational KPI goals across multiple employee sheets simultaneously.
 - **Technical Requirements**:
-  - Build an administrative distribution view to select target organizational tracking tracks and push uniform parent goal records. (**PENDING UI**)
+  - Build an administrative distribution view to select target organizational tracking tracks and push uniform parent goal records. (**IMPLEMENTED IN ADMIN HUB**)
   - **Cascading Read-Only Mapping**: Shared goals (`parent_goal_id IS NOT NULL`) are read-only except for weightage. (**IMPLEMENTED IN LOGIC**)
   - **Weightage Overrides**: Retain write permissions exclusively on the local `Weightage` input field. (**IMPLEMENTED IN LOGIC**)
 
@@ -157,8 +157,8 @@
 
 ### Feature 5.3: Global Compliance & Data Export Engine
 
-- **Status**: 🟡 **PARTIALLY IMPLEMENTED**
+- **Status**: ✅ **100% IMPLEMENTED**
 - **Functional Description**: A governance dashboard for HR to track organizational compliance rates and export performance data.
 - **Technical Requirements**:
-  - **Real-Time Dashboards**: Render visual heatmaps and tracking progress components. (**PENDING**)
+  - **Real-Time Dashboards**: Render visual heatmaps and tracking progress components. (**IMPLEMENTED IN ADMIN HUB**)
   - **Data Portability Engine**: CSV export implemented via `/api/export/csv` and Admin Hub "Export Data (CSV)" action. (**IMPLEMENTED**)

@@ -34,10 +34,12 @@ export async function middleware(request: NextRequest) {
 
   // refreshing the auth token
   const { data: { user } } = await supabase.auth.getUser();
+  const role = user?.user_metadata?.role || "employee";
 
   // Route protection logic
-  const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
-  const isAuthRoute = request.nextUrl.pathname === "/login";
+  const pathname = request.nextUrl.pathname;
+  const isDashboardRoute = pathname.startsWith("/dashboard");
+  const isAuthRoute = pathname === "/login";
 
   if (isDashboardRoute && !user) {
     // Redirect unauthenticated users to login
@@ -47,10 +49,24 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAuthRoute && user) {
-    // Redirect authenticated users away from login
+    // Redirect authenticated users away from login to their role-specific home
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = role === "admin" ? "/dashboard/admin" : "/dashboard";
     return NextResponse.redirect(url);
+  }
+
+  // RBAC Path Protection
+  if (isDashboardRoute) {
+    if (pathname.startsWith("/dashboard/admin") && role !== "admin") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    if (pathname.startsWith("/dashboard/review") && !["manager", "admin"].includes(role)) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    // Admin hitting root dashboard -> redirect to admin hub
+    if (pathname === "/dashboard" && role === "admin") {
+      return NextResponse.redirect(new URL("/dashboard/admin", request.url));
+    }
   }
 
   return supabaseResponse;

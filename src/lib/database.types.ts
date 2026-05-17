@@ -98,11 +98,13 @@ export interface AuditLog {
 
 export type GoalInsert = Omit<Goal, "id" | "created_at" | "updated_at">;
 export type GoalUpdate = Partial<
-  Pick<Goal, "thrust_area" | "title" | "description" | "uom" | "target_value" | "weightage" | "actual_achievement" | "progress_status" | "sort_order">
+  Omit<Goal, "id" | "created_at" | "updated_at">
 >;
 
-export type GoalSheetInsert = Pick<GoalSheet, "employee_id" | "cycle_id">;
-export type GoalSheetUpdate = Partial<Pick<GoalSheet, "status" | "rejection_feedback" | "approved_by">>;
+export type GoalSheetInsert = Omit<GoalSheet, "id" | "created_at" | "updated_at">;
+export type GoalSheetUpdate = Partial<
+  Omit<GoalSheet, "id" | "employee_id" | "cycle_id" | "created_at" | "updated_at">
+>;
 
 export type CheckinCommentInsert = Omit<CheckinComment, "id" | "created_at">;
 

@@ -1,5 +1,5 @@
 "use server";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 /* ─────────────────────────────────────────────────────────────
    checkin.actions.ts — Server Actions for quarterly check-ins
@@ -38,12 +38,13 @@ export async function upsertCheckinComment(
 ): Promise<CheckinComment> {
   const db = await createServerClient();
 
-  const { data, error } = (await (db.from("checkin_comments") as any)
+  const { data, error } = await db
+    .from("checkin_comments")
     .upsert(comment as Database["public"]["Tables"]["checkin_comments"]["Insert"], {
       onConflict: "goal_sheet_id,manager_id,quarter_phase",
     })
     .select()
-    .single()) as PostgrestSingleResponse<CheckinComment>;
+    .single();
 
   if (error)
     throw new Error(`Failed to save check-in comment: ${error.message}`);

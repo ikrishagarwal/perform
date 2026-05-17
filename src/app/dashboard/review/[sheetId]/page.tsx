@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getGoalSheet } from "@/lib/actions/goal-sheet.actions";
 import ReviewDecisionPanel from "./ReviewDecisionPanel";
+import ManagerReviewGoalList from "./ManagerReviewGoalList";
 
 export const metadata: Metadata = {
   title: "Review Sheet — PERFORM",
@@ -16,11 +17,9 @@ export default async function ReviewDetailPage({
   const sheet = await getGoalSheet(sheetId);
   if (!sheet) return <div>Sheet not found.</div>;
 
-  const totalWeight = (sheet.goals || []).reduce((s, g) => s + g.weightage, 0);
-
   return (
-    <div className="max-w-4xl mx-auto">
-      <header className="flex items-center justify-between mb-md">
+    <div className="max-w-4xl mx-auto flex flex-col gap-lg pb-2xl">
+      <header className="flex items-center justify-between">
         <div>
           <h1 className="text-headline-md font-[800]">
             Review: {sheet.employee?.full_name ?? "Employee"}
@@ -32,54 +31,45 @@ export default async function ReviewDetailPage({
         <div className="flex gap-sm">
           <Link
             href="/dashboard/review"
-            className="px-md py-sm border border-on-surface bg-surface-container-low text-on-surface"
+            className="px-md py-sm border-2 border-on-surface bg-surface text-on-surface font-bold hover:shadow-[4px_4px_0px_0px_#000000] transition-all"
           >
-            Back to review
+            Back to grid
           </Link>
         </div>
       </header>
 
-      <section className="mb-lg bg-surface-container-lowest border-2 border-on-surface p-md">
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="text-label-bold">
-              Status: <strong className="uppercase">{sheet.status}</strong>
-            </p>
-            <p className="text-label-sm text-on-surface-variant">
-              Total Weight: {totalWeight}%
-            </p>
-          </div>
+      <section className="bg-surface-container-lowest border-2 border-on-surface p-md shadow-[4px_4px_0px_0px_#000000]">
+        <div className="flex justify-between items-center mb-md border-b border-outline pb-sm">
+          <p className="text-label-bold">
+            Status: <span className={`px-sm py-xs border border-on-surface rounded uppercase text-xs ${
+              sheet.status === "submitted" ? "bg-tertiary text-on-tertiary" : "bg-primary text-on-primary"
+            }`}>{sheet.status}</span>
+          </p>
+          <p className="text-label-sm text-on-surface-variant">
+            Cycle ID: {sheet.cycle_id.slice(0, 8)}...
+          </p>
         </div>
 
-        <div className="mt-md">
-          <h3 className="text-label-bold mb-sm">Goals</h3>
-          <div className="flex flex-col gap-sm">
-            {(sheet.goals || []).map((g) => (
-              <div
-                key={g.id}
-                className="p-sm border border-on-surface bg-surface"
-              >
-                <div className="flex justify-between items-start gap-sm">
-                  <div>
-                    <div className="text-label-bold">{g.title}</div>
-                    <div className="text-label-sm text-on-surface-variant">
-                      {g.thrust_area}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-label-sm">
-                      Target: {g.target_value}
-                    </div>
-                    <div className="text-label-sm">Weight: {g.weightage}%</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ManagerReviewGoalList 
+          initialGoals={sheet.goals || []} 
+          sheetId={sheet.id} 
+          isLocked={sheet.status === "locked"}
+        />
       </section>
 
-      <ReviewDecisionPanel sheetId={sheet.id} />
+      {sheet.status !== "locked" && (
+        <div className="bg-surface-container-lowest border-2 border-on-surface p-md shadow-[4px_4px_0px_0px_#000000]">
+          <h3 className="text-label-bold mb-md border-b border-outline pb-sm uppercase">Decision Panel</h3>
+          <ReviewDecisionPanel sheetId={sheet.id} />
+        </div>
+      )}
+      
+      {sheet.status === "locked" && sheet.rejection_feedback && (
+        <div className="bg-error-container text-on-error-container border-2 border-error p-md">
+          <h3 className="text-label-bold mb-xs">Previous Rejection Feedback:</h3>
+          <p className="text-body-md">{sheet.rejection_feedback}</p>
+        </div>
+      )}
     </div>
   );
 }
