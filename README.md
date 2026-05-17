@@ -18,7 +18,7 @@ flowchart TB
         direction LR
         EMP["👤 Employee"]:::user
         MGR["👨‍💼 L1 Manager"]:::user
-        ADMIN["🛡️ Admin/HR"]:::user
+        ADMIN_USER["🛡️ Admin/HR"]:::user
     end
 
     %% ==================== PRESENTATION LAYER ====================
@@ -34,13 +34,13 @@ flowchart TB
             ADMIN_DASH["Admin/HR Command Portal<br/>src/app/dashboard/admin"]:::frontend
         end
 
-        NOTIF["Notification Bell<br/>Components"]:::frontend
+        FE_NOTIF["Notification Bell<br/>Components"]:::frontend
         NEXT --> DASHBOARDS
-        NEXT --> NOTIF
+        NEXT --> FE_NOTIF
     end
 
     %% ==================== APPLICATION LAYER ====================
-    subgraph BACKEND ["Application Layer (Next.js Server Actions)"]
+    subgraph BACKEND_LAYER ["Application Layer (Next.js Server Actions)"]
         direction TB
 
         subgraph CONTROLLERS ["Business Logic Controllers"]
@@ -56,8 +56,8 @@ flowchart TB
             PROFILE["profile.actions.ts"]:::backend
             SHEET["goal-sheet.actions.ts"]:::backend
             GOAL["goal.actions.ts"]:::backend
-            ADMIN["admin.actions.ts"]:::backend
-            NOTIF["notification.actions.ts"]:::backend
+            ADMIN_ACT["admin.actions.ts"]:::backend
+            ACT_NOTIF["notification.actions.ts"]:::backend
         end
     end
 
@@ -84,7 +84,7 @@ flowchart TB
         direction TB
         SMTP["SMTP Email Service<br/>Supabase Auth Emails"]:::external
         WEBHOOK["Webhook Notifications<br/>Future: Teams/Slack"]:::external
-        CRON["Cron Escalation Worker<br/>Future: Missed Check-in Alerts"]:::external
+        CRON["Cron Escalation Worker<br/>Vercel Cron Jobs"]:::external
     end
 
     %% ==================== DATA FLOW CONNECTIONS ====================
@@ -92,37 +92,36 @@ flowchart TB
     %% User to Frontend
     EMP -->|"HTTPS"| EMP_DASH
     MGR -->|"HTTPS"| MGR_DASH
-    ADMIN -->|"HTTPS"| ADMIN_DASH
+    ADMIN_USER -->|"HTTPS"| ADMIN_DASH
 
     %% Frontend to Backend
     EMP_DASH -->|"Server Actions + JWT"| CONTROLLERS
     MGR_DASH -->|"Server Actions + JWT"| CONTROLLERS
     ADMIN_DASH -->|"Server Actions + JWT"| CONTROLLERS
-    NOTIF -->|"Polling/Fetch"| NOTIF
+    FE_NOTIF -->|"Polling/Fetch"| ACT_NOTIF
 
     %% Backend Actions to Controllers
-    SHEET -->|"SQL"| GOAL_ENGINE
-    GOAL -->|"SQL"| FORMULA_EVAL
-    ADMIN -->|"SQL"| SYNC_ENGINE
+    SHEET -->|"Execute"| GOAL_ENGINE
+    GOAL -->|"Execute"| FORMULA_EVAL
+    ADMIN_ACT -->|"Execute"| SYNC_ENGINE
 
-    %% Controllers to Data Layer
+    %% Controllers to Data Layer via RLS
     AUTH_RBAC -->|"SQL + RLS"| PROFILES
-    GOAL_ENGINE -->|"SQL"| SHEETS
-    GOAL_ENGINE -->|"SQL: Lock state"| SHEETS
+    GOAL_ENGINE -->|"SQL via Prisma"| SHEETS
     GOAL_ENGINE -->|"SQL: Validate weight"| GOALS
-    GOAL_ENGINE -->|"SQL: Audit trail"| AUDIT
-    FORMULA_EVAL -->|"SQL: Progress calc"| GOALS
-    SYNC_ENGINE -->|"SQL: Cascade"| GOALS
+    GOAL_ENGINE -->|"SQL: Write Audit"| AUDIT
+    FORMULA_EVAL -->|"SQL: Read/Update"| GOALS
+    SYNC_ENGINE -->|"SQL: Cascade KPI"| GOALS
 
     %% Notification Flow
-    GOAL_ENGINE -->|"Server Action"| NOTIF
-    NOTIF -->|"SQL INSERT"| NOTIFICATIONS
+    GOAL_ENGINE -->|"Trigger"| ACT_NOTIF
+    ACT_NOTIF -->|"SQL INSERT"| NOTIFICATIONS
     NOTIFICATIONS -->|"SMTP Trigger"| SMTP
     NOTIFICATIONS -->|"Webhook URL"| WEBHOOK
 
     %% External Services
-    PROFILES -->|"SMTP"| SMTP
-    CRON -->|"Cron SQL Query"| PROFILES
+    PROFILES -->|"Auth Emails"| SMTP
+    CRON -->|"Secure HTTP Call"| AUTH_RBAC
 
     linkStyle default stroke:#333,stroke-width:1.5px
 ```
@@ -131,33 +130,36 @@ flowchart TB
 
 ## Technology Stack
 
-| Layer          | Technology                                    |
-| -------------- | -------------------------------------------- |
-| Framework      | Next.js 16.2.6 (App Router)                  |
-| UI             | React 19.2.4, Tailwind CSS 4                 |
-| Language       | TypeScript 5                                  |
-| Auth/DB        | @supabase/ssr, @supabase/supabase-js         |
-| Animations     | GSAP 3.15                                    |
-| Database       | Supabase (PostgreSQL)                        |
-| Deployment     | Vercel                                       |
+| Layer      | Technology                           |
+| ---------- | ------------------------------------ |
+| Framework  | Next.js 16.2.6 (App Router)          |
+| UI         | React 19.2.4, Tailwind CSS 4         |
+| Language   | TypeScript 5                         |
+| Auth/DB    | @supabase/ssr, @supabase/supabase-js |
+| Animations | GSAP 3.15                            |
+| Database   | Supabase (PostgreSQL)                |
+| Deployment | Vercel                               |
 
 ---
 
 ## User Roles & Permissions
 
 ### Employee
+
 - Create and manage personal goals
 - Track progress on assigned goals
 - View departmental KPIs shared by manager
 - Submit quarterly check-ins
 
 ### L1 Manager
+
 - View and approve team goal sheets
 - Cascade departmental KPIs to direct reports
 - Review and acknowledge quarterly check-ins
 - Access team performance analytics
 
 ### Admin / HR
+
 - Manage user profiles and reporting hierarchy
 - Configure system-wide goal settings
 - Configure performance cycles (Q1-Q4)
@@ -171,12 +173,14 @@ flowchart TB
 ## Core Features
 
 ### Goal Lifecycle Engine
+
 - Validates total weightage equals 100%
 - Enforces minimum 10% weight per goal
 - Restricts maximum of 8 goals per employee
 - Implements state lock upon manager approval
 
 ### Performance Formula Evaluator (UoM Types)
+
 - **numeric_min**: Progress capped at defined floor
 - **percentage_min**: Percentage progress with floor
 - **numeric_max**: Progress capped at defined ceiling
@@ -185,16 +189,19 @@ flowchart TB
 - **zero_based**: Progress starts from baseline
 
 ### Shared Goals Sync
+
 - Cascades departmental KPIs to multiple employee sheets
 - Maintains read-only status for title and target fields
 - Syncs automatically on manager approval
 
 ### Audit Logging
+
 - Immutable log of all post-lock modifications
 - Records: Who, What (field), When, Old/New values
 - Triggered on any goal sheet change after approval lock
 
 ### Notification System
+
 - In-app notifications with real-time updates
 - Notification bell component with unread counts
 - Deep-links to target pages
@@ -204,11 +211,13 @@ flowchart TB
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
 - pnpm (or npm/yarn)
 - Supabase account
 
 ### Installation
+
 ```bash
 # Install dependencies
 pnpm install
@@ -226,28 +235,28 @@ pnpm dev
 
 ### Tables
 
-| Table | Description |
-| ----- |-------------|
-| **profiles** | User info, role, reporting hierarchy (manager_id) |
-| **performance_cycles** | Q1-Q4 goal setting and review windows |
-| **goal_sheets** | Employee goal collections with status (draft/submitted/locked) |
-| **goals** | Individual goals with weightage, UoM, progress tracking |
-| **checkin_comments** | Manager feedback on quarterly check-ins |
-| **audit_logs** | Immutable record of post-lock modifications |
-| **notifications** | In-app alert system |
+| Table                  | Description                                                    |
+| ---------------------- | -------------------------------------------------------------- |
+| **profiles**           | User info, role, reporting hierarchy (manager_id)              |
+| **performance_cycles** | Q1-Q4 goal setting and review windows                          |
+| **goal_sheets**        | Employee goal collections with status (draft/submitted/locked) |
+| **goals**              | Individual goals with weightage, UoM, progress tracking        |
+| **checkin_comments**   | Manager feedback on quarterly check-ins                        |
+| **audit_logs**         | Immutable record of post-lock modifications                    |
+| **notifications**      | In-app alert system                                            |
 
 ---
 
 ## Key Files
 
-| Path | Purpose |
-|------|---------|
-| `src/middleware.ts` | Auth redirects & RBAC path protection |
-| `src/lib/actions/*.ts` | Server actions for all CRUD operations |
-| `src/app/dashboard/page.tsx` | Role-based dashboard router |
-| `src/app/dashboard/workspace/*` | Employee goal management |
-| `src/app/dashboard/review/*` | Manager approval workflow |
-| `src/app/dashboard/admin/*` | Admin/HR command portal |
+| Path                            | Purpose                                |
+| ------------------------------- | -------------------------------------- |
+| `src/middleware.ts`             | Auth redirects & RBAC path protection  |
+| `src/lib/actions/*.ts`          | Server actions for all CRUD operations |
+| `src/app/dashboard/page.tsx`    | Role-based dashboard router            |
+| `src/app/dashboard/workspace/*` | Employee goal management               |
+| `src/app/dashboard/review/*`    | Manager approval workflow              |
+| `src/app/dashboard/admin/*`     | Admin/HR command portal                |
 
 ---
 
