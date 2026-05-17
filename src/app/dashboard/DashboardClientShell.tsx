@@ -14,6 +14,10 @@ const getNavItems = (role?: string) => {
     { href: "/dashboard/review", label: "Manager Review", icon: "group_work", roles: ["manager", "admin"] },
     { href: "/dashboard/checkin", label: "Check-in", icon: "analytics", roles: ["employee", "manager"] },
     { href: "/dashboard/admin", label: "Admin Hub", icon: "admin_panel_settings", roles: ["admin"] },
+    { href: "/dashboard/admin/employees", label: "Employees", icon: "people", roles: ["admin"], parent: "/dashboard/admin" },
+    { href: "/dashboard/admin/audit", label: "Audit Logs", icon: "history", roles: ["admin", "manager"], parent: "/dashboard/admin" },
+    { href: "/dashboard/admin/distribute", label: "Distribute KPI", icon: "share", roles: ["admin", "manager"], parent: "/dashboard/admin" },
+    { href: "/dashboard/admin/unlock", label: "Unlock Sheets", icon: "lock_open", roles: ["admin", "manager"], parent: "/dashboard/admin" },
   ];
   return items.filter(item => item.roles.includes(role || "employee"));
 };
@@ -46,32 +50,64 @@ function Sidebar({ currentUser }: { currentUser: Profile | null }) {
       <div className="flex-1 overflow-y-auto p-md flex flex-col gap-lg">
         {/* Navigation Tabs */}
         <div className="flex flex-col gap-xs">
-          {getNavItems(currentUser?.role || "employee").map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={
-                  isActive
-                    ? "flex items-center gap-md bg-primary text-on-primary border-2 border-on-surface shadow-[4px_4px_0px_0px_#000000] -translate-x-1 -translate-y-1 p-md text-label-bold font-[700] tracking-[0.05em] transition-all duration-100"
-                    : "flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high p-md border-2 border-transparent hover:border-on-surface hover:shadow-[2px_2px_0px_0px_#000000] transition-all text-label-bold font-[700] tracking-[0.05em]"
-                }
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={
-                    isActive
-                      ? { fontVariationSettings: "'FILL' 1" }
-                      : undefined
-                  }
-                >
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+          {(() => {
+            const items = getNavItems(currentUser?.role || "employee");
+            const mainItems = items.filter(item => !item.parent);
+            const subItems = items.filter(item => item.parent);
+            
+            return mainItems.map((item) => {
+              const isActive = pathname === item.href;
+              const children = subItems.filter(sub => sub.parent === item.href);
+              const hasActiveChild = children.some(child => pathname === child.href);
+              
+              return (
+                <div key={item.href} className="flex flex-col">
+                  <Link
+                    href={item.href}
+                    className={
+                      isActive || (item.href === "/dashboard/admin" && hasActiveChild)
+                        ? "flex items-center gap-md bg-primary text-on-primary border-2 border-on-surface shadow-[4px_4px_0px_0px_#000000] -translate-x-1 -translate-y-1 p-md text-label-bold font-[700] tracking-[0.05em] transition-all duration-100"
+                        : "flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high p-md border-2 border-transparent hover:border-on-surface hover:shadow-[2px_2px_0px_0px_#000000] transition-all text-label-bold font-[700] tracking-[0.05em]"
+                    }
+                  >
+                    <span
+                      className="material-symbols-outlined"
+                      style={
+                        isActive || hasActiveChild
+                          ? { fontVariationSettings: "'FILL' 1" }
+                          : undefined
+                      }
+                    >
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </Link>
+                  {/* Sub-items */}
+                  {children.length > 0 && (
+                    <div className="ml-lg mt-xs flex flex-col gap-xs border-l-2 border-on-surface pl-md">
+                      {children.map((child) => {
+                        const isChildActive = pathname === child.href;
+                        return (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={
+                              isChildActive
+                                ? "flex items-center gap-sm bg-secondary text-on-secondary border-2 border-on-surface shadow-[2px_2px_0px_0px_#000000] -translate-x-1 p-sm text-label-bold font-[700] tracking-[0.05em] transition-all"
+                                : "flex items-center gap-sm text-on-surface-variant hover:bg-surface-container-high p-sm border-2 border-transparent hover:border-on-surface transition-all text-label-bold font-[700] tracking-[0.05em]"
+                            }
+                          >
+                            <span className="material-symbols-outlined text-sm">{child.icon}</span>
+                            <span className="text-xs">{child.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            });
+          })()}
         </div>
 
         {/* CTA Button */}
@@ -196,24 +232,56 @@ function MobileMenu({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-md flex flex-col gap-md">
           <div className="flex flex-col gap-xs">
-            {getNavItems(currentUser?.role || "employee").map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onClose}
-                  className={
-                    isActive
-                      ? "flex items-center gap-md bg-primary text-on-primary border-2 border-on-surface shadow-[4px_4px_0px_0px_#000000] -translate-x-1 -translate-y-1 p-md text-label-bold font-[700] tracking-[0.05em]"
-                      : "flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high p-md border-2 border-transparent hover:border-on-surface transition-all text-label-bold font-[700] tracking-[0.05em]"
-                  }
-                >
-                  <span className="material-symbols-outlined">{item.icon}</span>
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
+            {(() => {
+              const items = getNavItems(currentUser?.role || "employee");
+              const mainItems = items.filter(item => !item.parent);
+              const subItems = items.filter(item => item.parent);
+              
+              return mainItems.map((item) => {
+                const isActive = pathname === item.href;
+                const children = subItems.filter(sub => sub.parent === item.href);
+                const hasActiveChild = children.some(child => pathname === child.href);
+                
+                return (
+                  <div key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onClose}
+                      className={
+                        isActive || (item.href === "/dashboard/admin" && hasActiveChild)
+                          ? "flex items-center gap-md bg-primary text-on-primary border-2 border-on-surface shadow-[4px_4px_0px_0px_#000000] -translate-x-1 -translate-y-1 p-md text-label-bold font-[700] tracking-[0.05em]"
+                          : "flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high p-md border-2 border-transparent hover:border-on-surface transition-all text-label-bold font-[700] tracking-[0.05em]"
+                      }
+                    >
+                      <span className="material-symbols-outlined">{item.icon}</span>
+                      <span>{item.label}</span>
+                    </Link>
+                    {children.length > 0 && (
+                      <div className="ml-lg mt-xs flex flex-col gap-xs">
+                        {children.map((child) => {
+                          const isChildActive = pathname === child.href;
+                          return (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              onClick={onClose}
+                              className={
+                                isChildActive
+                                  ? "flex items-center gap-sm bg-secondary text-on-secondary border-2 border-on-surface shadow-[2px_2px_0px_0px_#000000] -translate-x-1 p-sm text-label-bold font-[700] tracking-[0.05em]"
+                                  : "flex items-center gap-sm text-on-surface-variant hover:bg-surface-container-high p-sm border-2 border-transparent hover:border-on-surface transition-all text-label-bold font-[700] tracking-[0.05em]"
+                              }
+                            >
+                              <span className="material-symbols-outlined text-sm">{child.icon}</span>
+                              <span className="text-xs">{child.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            })()}
           </div>
           
           <div className="mt-auto flex flex-col gap-xs border-t-2 border-on-surface pt-md">
